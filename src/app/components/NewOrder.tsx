@@ -360,7 +360,7 @@ export function NewOrder() {
                           : 'border-gray-200 text-gray-500 hover:border-gray-300'
                       }`}
                     >
-                      {status === 'Paid' ? '✅ Paid' : '⏳ Unpaid'}
+                      {status === 'Paid' ? 'Paid' : 'Unpaid'}
                     </button>
                   ))}
                 </div>
