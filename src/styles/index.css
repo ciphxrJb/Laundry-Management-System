@@ -1,0 +1,42 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* Print styles for receipts */
+@media print {
+  @page {
+    margin: 0.5cm;
+    size: auto;
+  }
+
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Hide navigation, headers, and action buttons */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Ensure receipt takes full width when printing */
+  .max-w-2xl {
+    max-width: 100% !important;
+  }
+
+  /* Remove shadows and adjust borders for print */
+  .shadow, .shadow-lg, .shadow-md {
+    box-shadow: none !important;
+  }
+
+  /* Optimize spacing for print */
+  .space-y-6 {
+    gap: 0 !important;
+  }
+
+  /* Ensure colors are preserved */
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
