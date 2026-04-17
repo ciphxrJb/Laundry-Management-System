@@ -64,7 +64,7 @@ export const api = {
   // Customers
   getCustomers: async () => { await delay(400); return { customers: [] }; },
 
-  getCustomer: async (id: string) => { await delay(400); return { customer: { id, name: 'Mock Customer' } }; },
+  getCustomer: async (id: string) => { await delay(400); return { customer: { id, name: 'Mock Customer', phone: '0917-000-0000' }, orders: [] }; },
 
   // Owner tools
   upsertStaffAccount: async (data: { email: string; password: string }) => { await delay(500); return { success: true }; },
