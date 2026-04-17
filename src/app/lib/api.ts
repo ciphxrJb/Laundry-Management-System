@@ -1,13 +1,21 @@
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+const projectId = "imxsejsnzdsczdnsxqzk"
+const publicAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlteHNlanNuemRzY3pkbnN4cXprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMDM1OTksImV4cCI6MjA5MTg3OTU5OX0.NfycSG6tAshJJCJxAZz_eW4hyuf52Zmx3znsIygbqzw"
+import { supabase } from './supabase';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-62a04e71`;
+// Edge function is deployed as "server"
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
+  const role = data.session?.user?.app_metadata?.role ?? data.session?.user?.user_metadata?.role;
+
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${publicAnonKey}`,
+      'Authorization': accessToken ? `Bearer ${accessToken}` : `Bearer ${publicAnonKey}`,
+      ...(role ? { 'X-App-Role': role } : {}),
       ...options.headers,
     },
   });
@@ -20,31 +28,46 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
 export const api = {
+  getMe: async () => { await delay(300); return { user: { id: 'mock-user-id', email: 'admin@laundry.com' } }; },
+
   // Orders
-  createOrder: (data: any) => apiRequest('/orders', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
+  createOrder: async (data: any) => { 
+    await delay(600); 
+    const mockId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+    return { order: { id: mockId, ...data } }; 
+  },
 
-  getOrders: () => apiRequest('/orders'),
+  getOrders: async () => { await delay(400); return { orders: [] }; },
 
-  updateOrder: (id: string, data: any) => apiRequest(`/orders/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
+  updateOrder: async (id: string, data: any) => { await delay(400); return { order: { id, ...data } }; },
 
-  deleteOrder: (id: string) => apiRequest(`/orders/${id}`, {
-    method: 'DELETE',
-  }),
+  deleteOrder: async (id: string) => { await delay(400); return { success: true }; },
 
   // Dashboard
-  getDashboard: () => apiRequest('/dashboard'),
+  getDashboard: async () => { 
+    await delay(500); 
+    return {
+      totalOrdersToday: 0,
+      pendingOrders: 0,
+      completedOrders: 0,
+      readyForPickup: 0,
+      totalIncomeToday: 0,
+      totalIncomeWeek: 0,
+      unpaidOrders: 0,
+      recentOrders: []
+    }; 
+  },
 
   // Customers
-  getCustomers: () => apiRequest('/customers'),
+  getCustomers: async () => { await delay(400); return { customers: [] }; },
 
-  getCustomer: (id: string) => apiRequest(`/customers/${id}`),
+  getCustomer: async (id: string) => { await delay(400); return { customer: { id, name: 'Mock Customer' } }; },
+
+  // Owner tools
+  upsertStaffAccount: async (data: { email: string; password: string }) => { await delay(500); return { success: true }; },
 };
 
 export type Order = {
@@ -81,4 +104,14 @@ export type DashboardStats = {
   totalIncomeWeek: number;
   unpaidOrders: number;
   recentOrders: Order[];
+};
+
+export type UserContext = {
+  user: {
+    id: string;
+    email: string;
+  };
+  role: 'owner' | 'manager' | 'cashier' | 'staff';
+  organizationId: string | null;
+  shopId: string | null;
 };

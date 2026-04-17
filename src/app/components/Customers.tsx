@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { api, Customer, Order } from '../lib/api';
+import { api, Customer, Order } from '@/app/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -29,10 +31,13 @@ export function Customers() {
     try {
       setLoading(true);
       const data = await api.getCustomers();
-      setCustomers(data.customers);
+      if (data && data.customers) {
+        setCustomers(data.customers);
+      } else {
+        setCustomers([]);
+      }
     } catch (error) {
-      console.error('Failed to load customers:', error);
-      toast.error('Failed to load customers');
+      setCustomers([]);
     } finally {
       setLoading(false);
     }

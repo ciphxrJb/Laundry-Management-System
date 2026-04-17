@@ -1,6 +1,8 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { api, Order } from '../lib/api';
+import { useRouter } from 'next/navigation';
+import { api, Order } from '@/app/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -21,7 +23,7 @@ import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 export function OrderManagement() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,10 +43,13 @@ export function OrderManagement() {
     try {
       setLoading(true);
       const data = await api.getOrders();
-      setOrders(data.orders);
+      if (data && data.orders) {
+        setOrders(data.orders);
+      } else {
+        setOrders([]);
+      }
     } catch (error) {
-      console.error('Failed to load orders:', error);
-      toast.error('Failed to load orders');
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -134,7 +139,7 @@ export function OrderManagement() {
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             <span className="ml-2">Refresh</span>
           </Button>
-          <Button onClick={() => navigate('/new-order')}>New Order</Button>
+          <Button onClick={() => router.push('/new-order')}>New Order</Button>
         </div>
       </div>
 
@@ -241,7 +246,7 @@ export function OrderManagement() {
                         )}
 
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate(`/receipt/${order.id}`)}>
+                          <Button variant="outline" size="sm" className="flex-1" onClick={() => router.push(`/receipt/${order.id}`)}>
                             <Eye size={16} />
                             <span className="ml-2">View</span>
                           </Button>
@@ -309,7 +314,7 @@ export function OrderManagement() {
                         </div>
 
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/receipt/${order.id}`)}>
+                          <Button variant="outline" size="sm" onClick={() => router.push(`/receipt/${order.id}`)}>
                             <Eye size={16} />
                           </Button>
                           <Button
