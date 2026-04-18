@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import { api, type UserContext } from '../lib/api';
+import { api } from '../lib/api';
 
 export type AppRole = 'owner' | 'manager' | 'cashier' | 'staff';
 
@@ -55,11 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const context = (await withTimeout(api.getMe(), 8000)) as UserContext;
+        const context = await withTimeout(api.getMe(), 8000);
         setUser(sessionUser);
-        setRole(context.role);
-        setShopId(context.shopId);
-        setOrganizationId(context.organizationId);
+        setRole((context?.role as AppRole) || resolveRole(sessionUser));
+        setShopId(context?.shopId || null);
+        setOrganizationId(null);
       } catch {
         setUser(sessionUser);
         setRole(resolveRole(sessionUser));

@@ -21,11 +21,15 @@ export default function ModeSelection() {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
+  const [correctPin, setCorrectPin] = useState<string>('1234');
 
   useEffect(() => {
     const fetchUser = async () => {
       const data = await api.getMe();
-      if (data?.user) setUserEmail(data.user.email || '');
+      if (data?.user) {
+        setUserEmail(data.user.email || '');
+        setCorrectPin(data.user.user_metadata?.admin_pin || '1234');
+      }
     };
     fetchUser();
   }, []);
@@ -53,7 +57,7 @@ export default function ModeSelection() {
     setLoading(true);
     await new Promise(r => setTimeout(r, 600)); 
 
-    if (inputPin === '1234') { 
+    if (inputPin === correctPin) { 
       localStorage.setItem('appMode', 'admin');
       sessionStorage.setItem('admin_unlocked', 'true');
       toast.success('Manager access granted');

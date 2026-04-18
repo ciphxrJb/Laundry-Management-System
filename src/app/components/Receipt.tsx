@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { api, Order } from '@/app/lib/api';
+import { supabase } from '@/app/lib/supabase';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 import { ArrowLeft, Printer } from 'lucide-react';
@@ -14,8 +15,24 @@ function ReceiptContent() {
   const id = params.id as string;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [shopInfo, setShopInfo] = useState({
+    name: 'Laundry POS',
+    address: '123 Main Street\nCityville',
+    phone: '0917-123-4567'
+  });
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.user_metadata) {
+        const meta = session.user.user_metadata;
+        setShopInfo({
+          name: meta.shop_name || 'Laundry POS',
+          address: meta.shop_address || '123 Main Street\nCityville',
+          phone: meta.shop_phone || '0917-123-4567'
+        });
+      }
+    });
+
     if (id) {
       loadOrder();
     }
@@ -26,28 +43,25 @@ function ReceiptContent() {
     try {
       setLoading(true);
       const data = await api.getOrders();
-      const foundOrder = data.orders.find((o: Order) => o.id === id);
+      const foundOrder = data.find((o: Order) => o.id === id);
       
-      // If we are mocking api and creating local orders, "getOrders" might be empty 
-      // in our simple mock. Let's handle testing gracefully by creating a dummy if needed
-      // so you can actually see the thermal receipt design!
       if (foundOrder) {
         setOrder(foundOrder);
       } else {
         // Mock fallback for immediate presentation testing
         setOrder({
           id: id,
-          customerId: 'test',
-          customerName: 'Test Customer',
-          phone: '09123456789',
-          serviceType: 'Wash & Dry',
+          customer_name: 'Test Customer',
+          customer_phone: '09123456789',
+          service_type: 'Wash & Dry',
           weight: 5.5,
+          item_count: null,
           price: 150.00,
           status: 'Pending',
-          paymentStatus: 'Unpaid',
+          payment_status: 'Unpaid',
           notes: 'Test generated order',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          user_id: 'test'
         });
       }
     } catch (error) {
@@ -102,10 +116,11 @@ function ReceiptContent() {
           
           {/* Header */}
           <div className="text-center mb-4">
-            <h1 className="text-xl font-bold uppercase mb-1">Laundry POS</h1>
-            <p className="text-[11px] mb-0.5">123 Main Street</p>
-            <p className="text-[11px] mb-0.5">Cityville</p>
-            <p className="text-[11px]">Tel: 0917-123-4567</p>
+            <h1 className="text-xl font-bold uppercase mb-1">{shopInfo.name}</h1>
+            {shopInfo.address.split('\n').map((line, i) => (
+              <p key={i} className="text-[11px] mb-0.5">{line}</p>
+            ))}
+            <p className="text-[11px]">Tel: {shopInfo.phone}</p>
           </div>
 
           <div className="border-t border-dashed border-gray-400 my-3" />
@@ -114,11 +129,11 @@ function ReceiptContent() {
           <div className="mb-4">
             <div className="flex justify-between">
               <span>Date:</span>
-              <span>{formatDate(order.createdAt)}</span>
+              <span>{formatDate(order.created_at)}</span>
             </div>
             <div className="flex justify-between">
               <span>Ticket:</span>
-              <span className="font-bold">{order.id}</span>
+              <span className="font-bold">{order.id.slice(0, 8).toUpperCase()}</span>
             </div>
           </div>
 
@@ -126,8 +141,8 @@ function ReceiptContent() {
 
           {/* Customer Metadata */}
           <div className="mb-4">
-            <p className="uppercase font-bold mb-1 border-b border-gray-800 inline-block">CUST: {order.customerName}</p>
-            {order.phone && <p>Tel: {order.phone}</p>}
+            <p className="uppercase font-bold mb-1 border-b border-gray-800 inline-block">CUST: {order.customer_name}</p>
+            {order.customer_phone && <p>Tel: {order.customer_phone}</p>}
           </div>
 
           <div className="border-t border-dashed border-gray-400 my-3" />
@@ -141,10 +156,11 @@ function ReceiptContent() {
           {/* Service Line Items */}
           <div className="flex justify-between items-start mb-1">
             <div className="w-2/3 pr-2">
-              <span className="uppercase">{order.serviceType}</span>
-              {order.weight && (
-                <div className="text-[11px] ml-2">@ {order.weight} kg</div>
-              )}
+              <span className="uppercase">{order.service_type}</span>
+              <div className="text-[11px] ml-2">
+                {order.weight && <span>@ {order.weight} kg </span>}
+                {order.item_count && <span>({order.item_count} pcs)</span>}
+              </div>
             </div>
             <div className="w-1/3 text-right">
               {order.price.toFixed(2)}
@@ -172,8 +188,8 @@ function ReceiptContent() {
 
           {/* Payment Status Tag */}
           <div className="flex justify-end mb-4">
-            <span className={`px-2 py-0.5 uppercase border ${order.paymentStatus === 'Paid' ? 'border-black font-bold' : 'border-gray-500 border-dashed'}`}>
-              *{order.paymentStatus}*
+            <span className={`px-2 py-0.5 uppercase border ${order.payment_status === 'Paid' ? 'border-black font-bold' : 'border-gray-500 border-dashed'}`}>
+              *{order.payment_status}*
             </span>
           </div>
 

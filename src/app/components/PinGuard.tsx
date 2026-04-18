@@ -28,8 +28,7 @@ export function PinGuard({ children }: PinGuardProps) {
     // Fetch the shop's actual pin
     async function fetchPin() {
       const me = await api.getMe();
-      // We'll assume the shop data has admin_pin
-      setCorrectPin(me?.shop?.admin_pin || '1234');
+      setCorrectPin(me?.user?.user_metadata?.admin_pin || '1234');
     }
     fetchPin();
   }, []);

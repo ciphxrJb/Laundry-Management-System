@@ -13,7 +13,8 @@ import {
   Shield, 
   Droplets,
   ChevronRight,
-  User 
+  User,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
@@ -55,7 +56,8 @@ export function Layout({ children }: LayoutProps) {
         { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/new-order', label: 'New Order', icon: ShoppingCart },
         { path: '/orders', label: 'Orders', icon: FileText },
-        { path: '/customers', label: 'Customers', icon: Users }
+        { path: '/customers', label: 'Customers', icon: Users },
+        { path: '/settings', label: 'Settings', icon: SettingsIcon }
       ]
     : [
         { path: '/new-order', label: 'New Order', icon: ShoppingCart },
