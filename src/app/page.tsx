@@ -1,88 +1,212 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, Monitor, Droplets, ChevronRight } from 'lucide-react';
+import { supabase } from './lib/supabase';
+import { Settings, Monitor, Droplets, Lock, X, Loader2, ChevronRight, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { api } from './lib/api';
+
+/**
+ * COMPLIANCE: Design System v1.0
+ * - Background: bg-slate-50
+ * - Typography: H1 (text-3xl font-bold), Technical (text-[10px] uppercase font-black)
+ * - Radius: rounded-[2rem]
+ * - Shadow: shadow-xl shadow-slate-200/50
+ */
 
 export default function ModeSelection() {
   const router = useRouter();
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pin, setPin] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const data = await api.getMe();
+      if (data?.user) setUserEmail(data.user.email || '');
+    };
+    fetchUser();
+  }, []);
 
   const selectMode = (mode: 'system' | 'admin') => {
-    localStorage.setItem('appMode', mode);
-    
     if (mode === 'system') {
+      localStorage.setItem('appMode', 'system');
       router.push('/new-order');
     } else {
-      toast.success('Welcome Admin');
-      router.push('/dashboard');
+      setShowPinModal(true);
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-50">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-400/20 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-400/20 blur-[120px] pointer-events-none" />
+  const handleKeyPress = (num: string) => {
+    if (pin.length < 4) {
+      const newPin = pin + num;
+      setPin(newPin);
+      if (newPin.length === 4) {
+        verifyPin(newPin);
+      }
+    }
+  };
 
-      <div className="max-w-5xl w-full px-6 relative z-10 -mt-10">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center p-3 bg-white rounded-2xl shadow-sm mb-6 border border-slate-100">
-            <Droplets className="text-blue-500 w-8 h-8" />
+  const verifyPin = async (inputPin: string) => {
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 600)); 
+
+    if (inputPin === '1234') { 
+      localStorage.setItem('appMode', 'admin');
+      sessionStorage.setItem('admin_unlocked', 'true');
+      toast.success('Manager access granted');
+      router.push('/dashboard');
+    } else {
+      toast.error('Invalid Manager PIN');
+      setPin('');
+    }
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    toast.success('Signed out successfully');
+  };
+
+  return (
+    <div className="h-screen bg-slate-50 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+      
+      {/* Background Aura (Design System Compliant) */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-5%] left-[-5%] w-[60%] h-[60%] rounded-full bg-blue-100/50 blur-[130px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[60%] h-[60%] rounded-full bg-purple-100/30 blur-[130px]" />
+      </div>
+
+      <div className={`w-full max-w-5xl relative z-10 transition-all duration-700 ${showPinModal ? 'blur-2xl scale-95 opacity-40 px-6' : 'scale-100 opacity-100'}`}>
+        
+        {/* Top Header (Design System Compliant) */}
+        <div className="w-full flex justify-between items-center mb-16 px-4 animate-in fade-in slide-in-from-top-4 duration-1000">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white shadow-sm rounded-xl flex items-center justify-center border border-slate-100">
+              <Droplets className="text-blue-600 w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Authenticated Operator</p>
+              <p className="text-sm font-bold text-slate-900">{userEmail}</p>
+            </div>
           </div>
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-4">
-            Laundry<span className="text-blue-600">POS</span>
-          </h1>
-          <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto font-medium">
-            Select your operating environment to continue
-          </p>
+          <button 
+            onClick={handleLogout}
+            className="group flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-red-600 hover:border-red-100 transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm active:scale-95"
+          >
+            <Lock size={12} className="group-hover:rotate-12 transition-transform" />
+            Sign Out
+          </button>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* System Mode Action */}
+        {/* HORIZONTAL TERMINAL CARDS (Design System Compliant) */}
+        <div className="grid md:grid-cols-2 gap-10">
+          
+          {/* POS Terminal */}
           <button 
             onClick={() => selectMode('system')}
-            className="group relative text-left bg-white/60 backdrop-blur-xl border border-white/80 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 block w-full"
+            className="group relative bg-white border border-slate-100 p-12 rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-blue-600/10 transition-all duration-500 hover:-translate-y-2 block w-full text-left overflow-hidden animate-in fade-in slide-in-from-left-8 duration-700"
           >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-3xl" />
+            <div className="absolute top-0 right-0 w-40 h-40 bg-blue-50/50 rounded-full translate-x-12 -translate-y-12 transition-transform group-hover:scale-150 duration-700 font-bold" />
             
-            <div className="flex items-start justify-between mb-6">
-              <div className="p-4 bg-blue-50 rounded-2xl group-hover:bg-blue-100 transition-colors">
-                <Monitor className="w-8 h-8 text-blue-600 group-hover:scale-110 transition-transform duration-300" />
+            <div className="relative z-10">
+              <div className="p-5 bg-blue-600 rounded-2xl w-fit mb-10 text-white shadow-xl shadow-blue-600/30 group-hover:rotate-6 group-hover:scale-110 transition-all duration-500">
+                <Monitor size={32} />
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                <ChevronRight className="w-5 h-5 text-blue-600" />
+              
+              <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3">POS Service Terminal</div>
+              <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-3">System POS</h2>
+              <p className="text-base text-slate-500 leading-relaxed font-medium pr-8 opacity-80">Track orders, manage laundry processing, and issue digital receipts.</p>
+              
+              <div className="mt-10 flex items-center gap-2 text-blue-600 font-bold text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 transition-all duration-500">
+                Launch Workspace <ChevronRight size={14} />
               </div>
             </div>
-            
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">System POS</h2>
-            <p className="text-slate-500 leading-relaxed">
-              For cashiers and staff operations. Create new orders, manage customers, and process active laundry batches.
-            </p>
           </button>
 
-          {/* Admin Mode Action */}
+          {/* Admin Terminal */}
           <button 
             onClick={() => selectMode('admin')}
-            className="group relative text-left bg-white/60 backdrop-blur-xl border border-white/80 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 block w-full"
+            className="group relative bg-white border border-slate-100 p-12 rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-900/10 transition-all duration-500 hover:-translate-y-2 block w-full text-left overflow-hidden animate-in fade-in slide-in-from-right-8 duration-700"
           >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-400 to-pink-400 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-3xl" />
+            <div className="absolute top-0 right-0 w-40 h-40 bg-slate-50/50 rounded-full translate-x-12 -translate-y-12 transition-transform group-hover:scale-150 duration-700" />
             
-            <div className="flex items-start justify-between mb-6">
-              <div className="p-4 bg-purple-50 rounded-2xl group-hover:bg-purple-100 transition-colors">
-                <Settings className="w-8 h-8 text-purple-600 group-hover:rotate-90 transition-transform duration-500" />
+            <div className="relative z-10">
+              <div className="p-5 bg-slate-900 rounded-2xl w-fit mb-10 text-white shadow-xl shadow-slate-900/30 group-hover:-rotate-6 group-hover:scale-110 transition-all duration-500">
+                <Settings size={32} />
               </div>
-              <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                <ChevronRight className="w-5 h-5 text-purple-600" />
+              
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Core Administration</div>
+              <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-3">Management</h2>
+              <p className="text-base text-slate-500 leading-relaxed font-medium pr-8 opacity-80">Access financial reports, shop analytics, and staff management.</p>
+              
+              <div className="mt-10 flex items-center gap-2 text-slate-900 font-bold text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 transition-all duration-500">
+                Launch Dashboard <ChevronRight size={14} />
               </div>
             </div>
-            
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Administration</h2>
-            <p className="text-slate-500 leading-relaxed">
-              For managers and owners. View financial reports, configure business settings, and manage staff accounts.
-            </p>
           </button>
+
         </div>
+
+        {/* Footer (Design System Compliant) */}
+        <div className="mt-20 flex justify-center animate-in fade-in duration-1000 delay-500">
+          <div className="flex items-center gap-2.5 px-6 py-3 bg-white rounded-full border border-slate-100 shadow-sm">
+            <Sparkles className="text-blue-500 w-4 h-4" />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enterprise Edition v1.2.0</span>
+          </div>
+        </div>
+
       </div>
+
+      {/* PIN MODAL (Design System Compliant) */}
+      {showPinModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-100/50 backdrop-blur-2xl animate-in fade-in duration-700" onClick={() => { setShowPinModal(false); setPin(''); }} />
+          
+          <div className="relative max-w-sm w-full bg-white rounded-[2.5rem] shadow-2xl shadow-black/10 border border-slate-100 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-12 duration-700">
+            <div className="p-12 text-center bg-slate-50 border-b border-slate-100">
+              <div className="inline-flex p-5 bg-blue-600 rounded-[1.5rem] mb-8 shadow-xl shadow-blue-200">
+                <Lock className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight leading-none mb-1">MANAGER PIN</h2>
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px] mt-4">Verification Required</p>
+            </div>
+
+            <div className="p-12">
+              <div className="flex justify-center gap-6 mb-12">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${pin.length > i ? 'bg-blue-600 scale-125 shadow-lg shadow-blue-300' : 'bg-slate-200'}`} />
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-5">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => handleKeyPress(num.toString())}
+                    disabled={loading}
+                    className="h-16 rounded-[1.5rem] bg-white border border-slate-100 shadow-sm hover:shadow-md hover:bg-slate-50 flex items-center justify-center text-3xl font-black text-slate-800 active:scale-95 transition-all"
+                  >
+                    {num}
+                  </button>
+                ))}
+                <button onClick={() => setPin('')} disabled={loading} className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reset</button>
+                <button onClick={() => handleKeyPress('0')} disabled={loading} className="h-16 rounded-[1.5rem] bg-white border border-slate-100 flex items-center justify-center text-3xl font-black text-slate-800 active:scale-95 transition-all">0</button>
+                <button onClick={() => { setShowPinModal(false); setPin(''); }} disabled={loading} className="flex items-center justify-center text-slate-200"><X size={24} /></button>
+              </div>
+            </div>
+
+            {loading && (
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+                <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

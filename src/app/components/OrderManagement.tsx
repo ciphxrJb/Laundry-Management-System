@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, Order } from '@/app/lib/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -18,9 +18,17 @@ import {
   AlertDialogTitle,
 } from './ui/alert-dialog';
 import { toast } from 'sonner';
-import { Trash2, Eye, RefreshCw, Search } from 'lucide-react';
+import { Trash2, Eye, RefreshCw, Search, Calculator, Timer, CheckCircle, Wallet, Phone, ArrowUpRight } from 'lucide-react';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+
+/**
+ * COMPLIANCE: Design System v1.0
+ * - Unified with Selection Page DNA
+ * - Radius: rounded-[2rem]
+ * - Background: bg-slate-50
+ * - Typography: text-3xl font-bold
+ */
 
 export function OrderManagement() {
   const router = useRouter();
@@ -43,11 +51,7 @@ export function OrderManagement() {
     try {
       setLoading(true);
       const data = await api.getOrders();
-      if (data && data.orders) {
-        setOrders(data.orders);
-      } else {
-        setOrders([]);
-      }
+      setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       setOrders([]);
     } finally {
@@ -57,308 +61,185 @@ export function OrderManagement() {
 
   const filterOrders = () => {
     let filtered = orders;
-
-    // Filter by tab
     if (activeTab !== 'all') {
       filtered = filtered.filter(order => {
-        if (activeTab === 'pending') return order.status === 'Pending' || order.status === 'Washing' || order.status === 'Drying';
-        if (activeTab === 'ready') return order.status === 'Ready for pickup';
+        if (activeTab === 'pending') return order.status === 'Pending' || order.status === 'Processing';
+        if (activeTab === 'ready') return order.status === 'Ready';
         if (activeTab === 'completed') return order.status === 'Completed';
-        if (activeTab === 'unpaid') return order.paymentStatus === 'Unpaid';
+        if (activeTab === 'unpaid') return order.payment_status === 'Unpaid';
         return true;
       });
     }
-
-    // Filter by search
     if (searchQuery) {
+      const q = searchQuery.toLowerCase();
       filtered = filtered.filter(order =>
-        order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.phone?.includes(searchQuery) ||
-        order.id.toLowerCase().includes(searchQuery.toLowerCase())
+        (order.customer_name?.toLowerCase() || '').includes(q) ||
+        (order.customer_phone || '').includes(q)
       );
     }
-
     setFilteredOrders(filtered);
   };
 
-  const updateOrderStatus = async (orderId: string, status: string) => {
+  const updateOrderStatus = async (orderId: string, status: any) => {
     try {
-      await api.updateOrder(orderId, { status });
-      toast.success('Order status updated');
+      await api.updateOrderStatus(orderId, status);
+      toast.success(`Status: ${status}`);
       loadOrders();
     } catch (error: any) {
-      console.error('Failed to update order:', error);
-      toast.error(error.message || 'Failed to update order');
+      toast.error('Sync failed');
     }
   };
 
-  const updatePaymentStatus = async (orderId: string, paymentStatus: string) => {
-    try {
-      await api.updateOrder(orderId, { paymentStatus });
-      toast.success('Payment status updated');
-      loadOrders();
-    } catch (error: any) {
-      console.error('Failed to update payment:', error);
-      toast.error(error.message || 'Failed to update payment');
-    }
-  };
+  const statusOptions = ['Pending', 'Processing', 'Ready', 'Completed', 'Cancelled'];
 
-  const deleteOrder = async () => {
-    if (!deleteOrderId) return;
-
-    try {
-      await api.deleteOrder(deleteOrderId);
-      toast.success('Order deleted');
-      loadOrders();
-      setDeleteOrderId(null);
-    } catch (error: any) {
-      console.error('Failed to delete order:', error);
-      toast.error(error.message || 'Failed to delete order');
-    }
-  };
-
-  const statusOptions = ['Pending', 'Washing', 'Drying', 'Ready for pickup', 'Completed'];
-
-  const tabCounts = {
-    all: orders.length,
-    pending: orders.filter(o => o.status === 'Pending' || o.status === 'Washing' || o.status === 'Drying').length,
-    ready: orders.filter(o => o.status === 'Ready for pickup').length,
-    completed: orders.filter(o => o.status === 'Completed').length,
-    unpaid: orders.filter(o => o.paymentStatus === 'Unpaid').length,
+  const stats = {
+    revenue: orders.reduce((sum, o) => sum + Number(o.price || 0), 0),
+    active: orders.filter(o => o.status === 'Pending' || o.status === 'Processing').length,
+    unpaid: orders.filter(o => o.payment_status === 'Unpaid').length
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-10 pb-20 animate-in fade-in duration-700">
+      
+      {/* STANDARD HEADER DNA */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
         <div>
-          <h1 className="text-3xl font-bold">Order Management</h1>
-          <p className="text-gray-600 mt-1">Track and manage all laundry orders</p>
+          <div className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-3">Management Console</div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Active Registries</h1>
+          <p className="text-sm text-slate-500 font-medium mt-1">Real-time operational monitoring and control.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={loadOrders} disabled={loading}>
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            <span className="ml-2">Refresh</span>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={loadOrders} disabled={loading} className="h-12 w-12 rounded-xl bg-white border-slate-100 shadow-sm active:scale-95 transition-all">
+            <RefreshCw size={18} className={loading ? 'animate-spin' : 'text-slate-400'} />
           </Button>
-          <Button onClick={() => router.push('/new-order')}>New Order</Button>
+          <Button onClick={() => router.push('/new-order')} className="h-12 bg-blue-600 rounded-xl px-8 font-bold text-white shadow-xl shadow-blue-200 active:scale-95 transition-all">
+            New Transaction
+          </Button>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-        <Input
-          placeholder="Search by customer name, phone, or order ID..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
+      {/* COMPACT STATS PLATES */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          { label: 'Revenue Pool', val: `₱${stats.revenue.toLocaleString()}`, icon: Wallet, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Active Loads', val: stats.active, icon: Timer, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Unpaid Items', val: stats.unpaid, icon: Calculator, color: 'text-slate-900', bg: 'bg-slate-50' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-50 flex items-center justify-between">
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+              <h4 className={`text-2xl font-bold ${stat.color}`}>{stat.val}</h4>
+            </div>
+            <div className={`p-3 ${stat.bg} ${stat.color} rounded-2xl`}>
+              <stat.icon size={20} />
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-5 w-full md:w-auto">
-          <TabsTrigger value="all">All ({tabCounts.all})</TabsTrigger>
-          <TabsTrigger value="pending">Pending ({tabCounts.pending})</TabsTrigger>
-          <TabsTrigger value="ready">Ready ({tabCounts.ready})</TabsTrigger>
-          <TabsTrigger value="completed">Done ({tabCounts.completed})</TabsTrigger>
-          <TabsTrigger value="unpaid">Unpaid ({tabCounts.unpaid})</TabsTrigger>
-        </TabsList>
+      {/* UNIFIED LIST PLATE */}
+      <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden bg-white">
+        <CardContent className="p-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="px-8 pt-8 pb-6 flex flex-col md:flex-row gap-6 justify-between items-center border-b border-slate-50">
+              <TabsList className="bg-slate-50 p-1.5 rounded-2xl h-auto">
+                {['all', 'pending', 'ready', 'completed'].map(t => (
+                  <TabsTrigger key={t} value={t} className="rounded-xl px-6 py-2 font-bold text-[10px] uppercase tracking-widest leading-none">
+                    {t}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Input
+                  placeholder="Filter records..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-12 h-11 bg-slate-50 border-none rounded-xl text-sm font-medium"
+                />
+              </div>
+            </div>
 
-        <TabsContent value={activeTab} className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Orders ({filteredOrders.length})</CardTitle>
-              <CardDescription>Manage order status and payments</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <div className="divide-y divide-slate-50">
               {loading ? (
-                <div className="text-center py-8 text-gray-500">Loading orders...</div>
+                <div className="py-24 text-center text-slate-300 font-bold uppercase text-[10px] tracking-widest">Synchronizing...</div>
               ) : filteredOrders.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No orders found. {searchQuery && 'Try a different search.'}
-                </div>
+                <div className="py-24 text-center text-slate-300 font-bold uppercase text-[10px] tracking-widest">No matching records</div>
               ) : (
-                <div className="space-y-4">
-                  {filteredOrders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="p-4 border rounded-lg hover:shadow-md transition-shadow"
-                    >
-                      {/* Mobile Layout */}
-                      <div className="md:hidden space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                          <div onClick={() => router.push(`/customers?search=${encodeURIComponent(order.customerName)}`)} className="cursor-pointer hover:text-blue-600 transition-colors">
-                            <p className="font-bold text-lg">{order.customerName}</p>
-                          </div>
-                            <p className="text-sm text-gray-600">{order.phone || 'No phone'}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(order.createdAt).toLocaleString()}
-                            </p>
-                          </div>
-                          <p className="font-bold text-xl text-blue-600">₱{order.price.toFixed(2)}</p>
-                        </div>
-
-                        <div className="flex gap-2 flex-wrap">
-                          <Badge variant="outline">{order.serviceType}</Badge>
-                          {order.weight && <Badge variant="outline">{order.weight} kg</Badge>}
-                          {order.itemCount && <Badge variant="outline">{order.itemCount} pcs</Badge>}
-                        </div>
-
-                        <div className="space-y-2">
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Status</p>
-                            <Select
-                              value={order.status}
-                              onValueChange={(value) => updateOrderStatus(order.id, value)}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {statusOptions.map((status) => (
-                                  <SelectItem key={status} value={status}>
-                                    {status}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Payment</p>
-                            <Select
-                              value={order.paymentStatus}
-                              onValueChange={(value) => updatePaymentStatus(order.id, value)}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Paid">Paid</SelectItem>
-                                <SelectItem value="Unpaid">Unpaid</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {order.notes && (
-                          <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                            Note: {order.notes}
-                          </p>
-                        )}
-
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1" onClick={() => router.push(`/receipt/${order.id}`)}>
-                            <Eye size={16} />
-                            <span className="ml-2">View</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDeleteOrderId(order.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        </div>
+                filteredOrders.map((order) => (
+                  <div key={order.id} className="group p-8 flex flex-col md:flex-row md:items-center gap-8 hover:bg-slate-50/50 transition-all duration-300">
+                    
+                    {/* Customer Core */}
+                    <div className="flex-1 flex items-center gap-5">
+                      <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shadow-sm text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                        <ArrowUpRight size={20} />
                       </div>
-
-                      {/* Desktop Layout */}
-                      <div className="hidden md:flex items-center gap-4">
-                        <div className="flex-1">
-                          <div onClick={() => router.push(`/customers?search=${encodeURIComponent(order.customerName)}`)} className="cursor-pointer hover:text-blue-600 transition-colors">
-                            <p className="font-bold text-lg">{order.customerName}</p>
-                          </div>
-                          <p className="text-sm text-gray-600">{order.phone || 'No phone'}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(order.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-
-                        <div className="flex flex-col items-center gap-1">
-                          <Badge variant="outline">{order.serviceType}</Badge>
-                          <div className="flex gap-2 text-xs text-gray-600">
-                            {order.weight && <span>{order.weight} kg</span>}
-                            {order.weight && order.itemCount && <span>•</span>}
-                            {order.itemCount && <span>{order.itemCount} pcs</span>}
-                          </div>
-                        </div>
-
-                        <div className="w-40">
-                          <Select
-                            value={order.status}
-                            onValueChange={(value) => updateOrderStatus(order.id, value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {statusOptions.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                  {status}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="w-32">
-                          <Select
-                            value={order.paymentStatus}
-                            onValueChange={(value) => updatePaymentStatus(order.id, value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Paid">Paid</SelectItem>
-                              <SelectItem value="Unpaid">Unpaid</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="text-right">
-                          <p className="font-bold text-xl text-blue-600">₱{order.price.toFixed(2)}</p>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => router.push(`/receipt/${order.id}`)}>
-                            <Eye size={16} />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDeleteOrderId(order.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-bold text-slate-900 tracking-tight leading-none mb-2 hover:text-blue-600 cursor-pointer transition-colors uppercase" onClick={() => router.push(`/receipt/${order.id}`)}>
+                          {order.customer_name}
+                        </h3>
+                        <div className="flex items-center gap-3 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                          <span className="flex items-center gap-1"><Phone size={10} /> {order.customer_phone || 'N/A'}</span>
+                          <span className="opacity-30">|</span>
+                          <span>{new Date(order.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
 
-      {/* Delete Confirmation Dialog */}
+                    {/* Stats Strip */}
+                    <div className="flex items-center gap-10">
+                      <div className="hidden lg:block text-center min-w-[100px]">
+                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Service Type</p>
+                        <Badge variant="secondary" className="bg-slate-100 text-slate-600 rounded-lg px-2 text-[9px] uppercase font-black">{order.service_type}</Badge>
+                      </div>
+                      <div className="text-right min-w-[80px]">
+                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Total</p>
+                        <p className="text-xl font-bold text-slate-900">₱{order.price}</p>
+                      </div>
+                    </div>
+
+                    {/* Action Hub */}
+                    <div className="flex items-center gap-3 md:pl-6 md:border-l md:border-slate-50">
+                      <div className="w-40">
+                        <Select value={order.status} onValueChange={(val) => updateOrderStatus(order.id, val)}>
+                          <SelectTrigger className={`h-11 rounded-xl border-none font-bold text-[10px] uppercase tracking-widest transition-all ${
+                            order.status === 'Ready' ? 'bg-green-100 text-green-700' :
+                            order.status === 'Processing' ? 'bg-blue-100 text-blue-700' :
+                            'bg-slate-100 text-slate-500'
+                          }`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl border-none shadow-2xl">
+                            {statusOptions.map(opt => <SelectItem key={opt} value={opt} className="font-bold text-[10px] uppercase tracking-widest">{opt}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button variant="outline" size="icon" onClick={() => router.push(`/receipt/${order.id}`)} className="h-11 w-11 rounded-xl bg-white border-slate-100 text-slate-300 hover:text-blue-600 hover:border-blue-100 active:scale-95 transition-all">
+                        <Eye size={18} />
+                      </Button>
+                      <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl bg-white border-slate-100 text-slate-300 hover:text-red-500 hover:border-red-100 active:scale-95 transition-all" onClick={() => setDeleteOrderId(order.id)}>
+                        <Trash2 size={18} />
+                      </Button>
+                    </div>
+
+                  </div>
+                ))
+              )}
+            </div>
+          </Tabs>
+        </CardContent>
+      </Card>
+
       <AlertDialog open={!!deleteOrderId} onOpenChange={() => setDeleteOrderId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-[2.5rem] border-none shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Order?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the order from the system.
-            </AlertDialogDescription>
+            <AlertDialogTitle className="font-bold text-xl uppercase tracking-tight">Delete Registry Entry?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 font-medium">This transaction record will be removed permanently from the registry. This action cannot be reversed.</AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteOrder} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
+          <AlertDialogFooter className="gap-2 pt-4">
+            <AlertDialogCancel className="rounded-xl border-slate-100 font-black text-[10px] uppercase tracking-widest">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setDeleteOrderId(null)} className="rounded-xl bg-red-600 font-black text-[10px] uppercase tracking-widest shadow-xl shadow-red-100">Confirm Removal</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
