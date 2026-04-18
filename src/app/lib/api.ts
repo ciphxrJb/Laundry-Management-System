@@ -62,7 +62,33 @@ export const api = {
   },
 
   // Customers
-  getCustomers: async () => { await delay(400); return { customers: [] }; },
+  getCustomers: async () => { 
+    await delay(400); 
+    return { 
+      customers: [
+        { 
+          id: 'cust-1', 
+          name: 'Juan Dela Cruz', 
+          phone: '09171234567', 
+          firstVisit: '2026-01-10', 
+          lastVisit: '2026-04-15', 
+          totalOrders: 12, 
+          totalSpent: 1450.50,
+          preferences: 'Uses own detergent (Ariel). Hang dry only.'
+        },
+        { 
+          id: 'cust-2', 
+          name: 'Maria Santos', 
+          phone: '09189876543', 
+          firstVisit: '2026-02-20', 
+          lastVisit: '2026-04-18', 
+          totalOrders: 5, 
+          totalSpent: 620.00,
+          preferences: 'Fold only. No starch.'
+        }
+      ] as Customer[]
+    }; 
+  },
 
   getCustomer: async (id: string) => { await delay(400); return { customer: { id, name: 'Mock Customer', phone: '0917-000-0000' }, orders: [] }; },
 
@@ -81,6 +107,7 @@ export type Order = {
   status: 'Pending' | 'Washing' | 'Drying' | 'Ready for pickup' | 'Completed';
   paymentStatus: 'Paid' | 'Unpaid';
   notes: string | null;
+  itemCount: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -93,6 +120,7 @@ export type Customer = {
   lastVisit: string;
   totalOrders: number;
   totalSpent: number;
+  preferences: string | null;
 };
 
 export type DashboardStats = {

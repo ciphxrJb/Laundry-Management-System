@@ -45,9 +45,10 @@ export function ThermalReceipt({ order }: { order: Order }) {
       <div className="flex justify-between items-start mb-1">
         <div className="w-2/3 pr-2">
           <span className="uppercase">{order.serviceType}</span>
-          {order.weight && (
-            <div className="text-[11px] ml-2">@ {order.weight} kg</div>
-          )}
+          <div className="text-[11px] ml-2">
+            {order.weight && <span>@ {order.weight} kg </span>}
+            {order.itemCount && <span>({order.itemCount} pcs)</span>}
+          </div>
         </div>
         <div className="w-1/3 text-right">
           {order.price.toFixed(2)}

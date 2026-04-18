@@ -188,7 +188,9 @@ export function OrderManagement() {
                       <div className="md:hidden space-y-3">
                         <div className="flex justify-between items-start">
                           <div>
+                          <div onClick={() => router.push(`/customers?search=${encodeURIComponent(order.customerName)}`)} className="cursor-pointer hover:text-blue-600 transition-colors">
                             <p className="font-bold text-lg">{order.customerName}</p>
+                          </div>
                             <p className="text-sm text-gray-600">{order.phone || 'No phone'}</p>
                             <p className="text-xs text-gray-500 mt-1">
                               {new Date(order.createdAt).toLocaleString()}
@@ -200,6 +202,7 @@ export function OrderManagement() {
                         <div className="flex gap-2 flex-wrap">
                           <Badge variant="outline">{order.serviceType}</Badge>
                           {order.weight && <Badge variant="outline">{order.weight} kg</Badge>}
+                          {order.itemCount && <Badge variant="outline">{order.itemCount} pcs</Badge>}
                         </div>
 
                         <div className="space-y-2">
@@ -264,7 +267,9 @@ export function OrderManagement() {
                       {/* Desktop Layout */}
                       <div className="hidden md:flex items-center gap-4">
                         <div className="flex-1">
-                          <p className="font-bold text-lg">{order.customerName}</p>
+                          <div onClick={() => router.push(`/customers?search=${encodeURIComponent(order.customerName)}`)} className="cursor-pointer hover:text-blue-600 transition-colors">
+                            <p className="font-bold text-lg">{order.customerName}</p>
+                          </div>
                           <p className="text-sm text-gray-600">{order.phone || 'No phone'}</p>
                           <p className="text-xs text-gray-500 mt-1">
                             {new Date(order.createdAt).toLocaleString()}
@@ -273,7 +278,11 @@ export function OrderManagement() {
 
                         <div className="flex flex-col items-center gap-1">
                           <Badge variant="outline">{order.serviceType}</Badge>
-                          {order.weight && <span className="text-xs text-gray-600">{order.weight} kg</span>}
+                          <div className="flex gap-2 text-xs text-gray-600">
+                            {order.weight && <span>{order.weight} kg</span>}
+                            {order.weight && order.itemCount && <span>•</span>}
+                            {order.itemCount && <span>{order.itemCount} pcs</span>}
+                          </div>
                         </div>
 
                         <div className="w-40">

@@ -80,6 +80,7 @@ export function NewOrder() {
     phone: '',
     serviceType: '',
     weight: '',
+    itemCount: '',
     price: '',
     paymentStatus: 'Unpaid' as 'Paid' | 'Unpaid',
     notes: '',
@@ -139,6 +140,7 @@ export function NewOrder() {
         phone: formData.phone || null,
         serviceType: formData.serviceType,
         weight: formData.weight ? parseFloat(formData.weight) : null,
+        itemCount: formData.itemCount ? parseInt(formData.itemCount) : null,
         price: parseFloat(formData.price),
         paymentStatus: formData.paymentStatus,
         notes: formData.notes.trim() || null,
@@ -297,6 +299,27 @@ export function NewOrder() {
                     Auto-calc: ₱{selectedService.basePrice} + {weightValue}kg × ₱{selectedService.pricePerKg}
                   </p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="itemCount" className="font-medium text-gray-700 flex items-center justify-between">
+                  <span>Item Count (pcs)</span>
+                  <span className="text-xs text-gray-400 font-normal">Optional</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="itemCount"
+                    type="number"
+                    min="0"
+                    value={formData.itemCount}
+                    onChange={(e) => setFormData({ ...formData, itemCount: e.target.value })}
+                    placeholder="0"
+                    className="h-10 pr-10 transition-shadow focus:ring-2 focus:ring-offset-0 focus:ring-blue-500/20"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                    pcs
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2">

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { api, Customer, Order } from '@/app/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -18,6 +19,14 @@ export function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get('search');
+
+  useEffect(() => {
+    if (initialSearch) {
+      setSearchQuery(initialSearch);
+    }
+  }, [initialSearch]);
 
   useEffect(() => {
     loadCustomers();
@@ -212,6 +221,19 @@ export function Customers() {
                     </p>
                   </CardContent>
                 </Card>
+              </div>
+
+              {/* Preferences Section */}
+              <div className="bg-amber-50 p-4 rounded-lg border border-amber-100">
+                <h3 className="text-sm font-bold text-amber-900 flex items-center gap-2 mb-2">
+                  <Package size={16} />
+                  SPECIAL PREFERENCES / NOTES
+                </h3>
+                {selectedCustomer.preferences ? (
+                  <p className="text-sm text-amber-800 italic">"{selectedCustomer.preferences}"</p>
+                ) : (
+                  <p className="text-sm text-amber-600 italic">No specific preferences recorded.</p>
+                )}
               </div>
 
               {/* Order History */}
