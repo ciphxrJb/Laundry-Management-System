@@ -41,6 +41,8 @@ export function Layout({ children }: LayoutProps) {
       const data = await api.getMe();
       if (data?.user) {
         setUserEmail(data.user.email || '');
+      } else {
+        router.push('/login');
       }
     };
     fetchUser();

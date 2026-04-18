@@ -22,17 +22,33 @@ export default function ModeSelection() {
   const [loading, setLoading] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [correctPin, setCorrectPin] = useState<string>('1234');
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
-      const data = await api.getMe();
-      if (data?.user) {
-        setUserEmail(data.user.email || '');
-        setCorrectPin(data.user.user_metadata?.admin_pin || '1234');
+      try {
+        const data = await api.getMe();
+        if (data?.user) {
+          setUserEmail(data.user.email || '');
+          setCorrectPin(data.user.user_metadata?.admin_pin || '1234');
+          setCheckingAuth(false);
+        } else {
+          router.push('/login');
+        }
+      } catch (err) {
+        router.push('/login');
       }
     };
     fetchUser();
-  }, []);
+  }, [router]);
+
+  if (checkingAuth) {
+    return (
+      <div className="h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   const selectMode = (mode: 'system' | 'admin') => {
     if (mode === 'system') {
