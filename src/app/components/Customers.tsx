@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api, Customer, Order } from '@/app/lib/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { toast } from 'sonner';
-import { Search, User, Phone, Calendar, DollarSign, Package } from 'lucide-react';
+import { Search, User, Phone, Package, DollarSign, Users, ChevronRight, Calendar } from 'lucide-react';
 
 export function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -23,9 +23,7 @@ export function Customers() {
   const initialSearch = searchParams.get('search');
 
   useEffect(() => {
-    if (initialSearch) {
-      setSearchQuery(initialSearch);
-    }
+    if (initialSearch) setSearchQuery(initialSearch);
   }, [initialSearch]);
 
   useEffect(() => {
@@ -40,11 +38,7 @@ export function Customers() {
     try {
       setLoading(true);
       const data = await api.getCustomers();
-      if (data && data.customers) {
-        setCustomers(data.customers);
-      } else {
-        setCustomers([]);
-      }
+      setCustomers(Array.isArray(data) ? data : []);
     } catch (error) {
       setCustomers([]);
     } finally {
@@ -53,14 +47,10 @@ export function Customers() {
   };
 
   const filterCustomers = () => {
-    if (!searchQuery) {
-      setFilteredCustomers(customers);
-      return;
-    }
-
-    const filtered = customers.filter(customer =>
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.phone?.includes(searchQuery)
+    const q = searchQuery.toLowerCase();
+    const filtered = customers.filter(c =>
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.phone || '').includes(q)
     );
     setFilteredCustomers(filtered);
   };
@@ -69,216 +59,142 @@ export function Customers() {
     setSelectedCustomer(customer);
     setLoadingOrders(true);
     try {
-      const data = await api.getCustomer(customer.id);
-      setCustomerOrders(data.orders);
+      const allOrders = await api.getOrders();
+      setCustomerOrders(allOrders.filter(o => o.customer_name === customer.name));
     } catch (error) {
-      console.error('Failed to load customer history:', error);
-      toast.error('Failed to load customer history');
+      toast.error('History load failed');
     } finally {
       setLoadingOrders(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Washing': return 'bg-blue-100 text-blue-800';
-      case 'Drying': return 'bg-cyan-100 text-cyan-800';
-      case 'Ready for pickup': return 'bg-purple-100 text-purple-800';
-      case 'Completed': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const stats = {
+    total: customers.length,
+    revenue: customers.reduce((sum, c) => sum + Number(c.total_spent || 0), 0)
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Customers</h1>
-        <p className="text-gray-600 mt-1">View customer history and information</p>
+    <div className="space-y-6 pb-12 animate-in fade-in duration-700">
+      
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Customer Directory</h1>
+          <p className="text-gray-600 mt-1">Manage laundry customer relationships</p>
+        </div>
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+          <Input
+            placeholder="Search customers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-        <Input
-          placeholder="Search by customer name or phone..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>All Customers ({filteredCustomers.length})</CardTitle>
-          <CardDescription>Customer list with order history</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading customers...</div>
-          ) : filteredCustomers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              {searchQuery ? 'No customers found matching your search.' : 'No customers yet.'}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCustomers.map((customer) => (
-                <Card key={customer.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => viewCustomerHistory(customer)}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-blue-100 rounded-full">
-                          <User size={20} className="text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-bold">{customer.name}</p>
-                          {customer.phone && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600">
-                              <Phone size={12} />
-                              <span>{customer.phone}</span>
-                            </div>
-                          )}
-                        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loading ? (
+             <div className="col-span-full py-12 text-center text-gray-400 font-semibold text-sm">Loading records...</div>
+        ) : filteredCustomers.length === 0 ? (
+            <div className="col-span-full py-12 text-center text-gray-400 font-semibold text-sm">No customers found.</div>
+        ) : (
+          filteredCustomers.map((customer) => (
+            <Card 
+              key={customer.id} 
+              className="hover:border-blue-300 transition-all cursor-pointer group"
+              onClick={() => viewCustomerHistory(customer)}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600 rounded-lg transition-colors">
+                      <User size={20} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{customer.name}</h4>
+                      <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                        <Phone size={12} /> <span>{customer.phone || 'No Phone'}</span>
                       </div>
                     </div>
-
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-gray-600">
-                          <Package size={14} />
-                          <span>Total Orders</span>
-                        </div>
-                        <span className="font-semibold">{customer.totalOrders}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-gray-600">
-                          <DollarSign size={14} />
-                          <span>Total Spent</span>
-                        </div>
-                        <span className="font-semibold text-green-600">₱{customer.totalSpent.toFixed(2)}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-gray-600">
-                          <Calendar size={14} />
-                          <span>Last Visit</span>
-                        </div>
-                        <span className="text-xs">{new Date(customer.lastVisit).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-
-                    <Button variant="outline" size="sm" className="w-full mt-3">
-                      View History
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Customer History Dialog */}
-      <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <User size={24} />
-              {selectedCustomer?.name}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedCustomer?.phone && (
-                <div className="flex items-center gap-1 mt-1">
-                  <Phone size={14} />
-                  <span>{selectedCustomer.phone}</span>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-500 transition-colors" />
                 </div>
-              )}
-            </DialogDescription>
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Visits</p>
+                    <p className="font-semibold text-gray-700">{customer.total_orders || 0}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Value</p>
+                    <p className="font-semibold text-green-600">₱{customer.total_spent || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+               <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                  <User size={20} />
+               </div>
+               <div>
+                  <DialogTitle>{selectedCustomer?.name}</DialogTitle>
+                  <DialogDescription className="flex items-center gap-1.5 pt-1">
+                     <Phone size={14} /> {selectedCustomer?.phone || 'Contact Unlisted'}
+                  </DialogDescription>
+               </div>
+            </div>
           </DialogHeader>
 
-          {selectedCustomer && (
-            <div className="space-y-4">
-              {/* Customer Stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <Card>
-                  <CardContent className="p-3 text-center">
-                    <p className="text-sm text-gray-600">Total Orders</p>
-                    <p className="text-2xl font-bold text-blue-600">{selectedCustomer.totalOrders}</p>
+          <div className="space-y-6 mt-2">
+            <div className="grid grid-cols-2 gap-4">
+               <Card className="bg-gray-50 border-none shadow-none">
+                  <CardContent className="p-4 text-center">
+                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Visits</p>
+                     <p className="text-2xl font-bold">{selectedCustomer?.total_orders || 0}</p>
                   </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-3 text-center">
-                    <p className="text-sm text-gray-600">Total Spent</p>
-                    <p className="text-2xl font-bold text-green-600">₱{selectedCustomer.totalSpent.toFixed(2)}</p>
+               </Card>
+               <Card className="bg-gray-50 border-none shadow-none">
+                  <CardContent className="p-4 text-center">
+                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Spent</p>
+                     <p className="text-2xl font-bold text-green-600">₱{selectedCustomer?.total_spent || 0}</p>
                   </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-3 text-center">
-                    <p className="text-sm text-gray-600">Customer Since</p>
-                    <p className="text-sm font-semibold mt-1">
-                      {new Date(selectedCustomer.firstVisit).toLocaleDateString()}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+               </Card>
+            </div>
 
-              {/* Preferences Section */}
-              <div className="bg-amber-50 p-4 rounded-lg border border-amber-100">
-                <h3 className="text-sm font-bold text-amber-900 flex items-center gap-2 mb-2">
-                  <Package size={16} />
-                  SPECIAL PREFERENCES / NOTES
-                </h3>
-                {selectedCustomer.preferences ? (
-                  <p className="text-sm text-amber-800 italic">"{selectedCustomer.preferences}"</p>
-                ) : (
-                  <p className="text-sm text-amber-600 italic">No specific preferences recorded.</p>
-                )}
-              </div>
-
-              {/* Order History */}
-              <div>
-                <h3 className="font-semibold mb-3">Order History</h3>
+            <div>
+              <h3 className="font-semibold text-sm mb-3">Transaction History</h3>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                 {loadingOrders ? (
-                  <div className="text-center py-4 text-gray-500">Loading orders...</div>
+                  <p className="text-center py-6 text-gray-400 text-sm">Loading history...</p>
                 ) : customerOrders.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500">No orders found</div>
+                  <p className="text-center py-6 text-gray-400 text-sm">No transaction history found.</p>
                 ) : (
-                  <div className="space-y-3">
-                    {customerOrders.map((order) => (
-                      <div key={order.id} className="p-3 border rounded-lg">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <Badge variant="outline">{order.serviceType}</Badge>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {new Date(order.createdAt).toLocaleString()}
-                            </p>
+                  customerOrders.map(o => (
+                    <div key={o.id} className="p-4 border rounded-xl flex items-center justify-between">
+                       <div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                             <Badge variant="outline">{o.service_type}</Badge>
+                             <span className="text-xs text-gray-500">{new Date(o.created_at).toLocaleDateString()}</span>
                           </div>
-                          <p className="font-bold text-lg">₱{order.price.toFixed(2)}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Badge className={getStatusColor(order.status)} variant="secondary">
-                            {order.status}
-                          </Badge>
-                          <Badge
-                            className={order.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
-                            variant="secondary"
-                          >
-                            {order.paymentStatus}
-                          </Badge>
-                        </div>
-                        {order.notes && (
-                          <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">
-                            {order.notes}
+                          <p className={`text-xs font-semibold ${o.status === 'Ready' ? 'text-green-600' : 'text-blue-600'}`}>
+                             {o.status}
                           </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                       </div>
+                       <p className="font-bold">₱{o.price}</p>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
-          )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

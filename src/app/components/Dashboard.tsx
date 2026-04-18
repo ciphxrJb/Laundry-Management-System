@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { DollarSign, Package, CheckCircle, Clock, AlertCircle, TrendingUp, RefreshCw } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { DemoDataButton } from './DemoDataButton';
 import { toast } from 'sonner';
 
 export function Dashboard() {
@@ -121,7 +120,6 @@ export function Dashboard() {
           <p className="text-gray-600 mt-1">Welcome back! Here's your shop overview</p>
         </div>
         <div className="flex gap-2">
-          <DemoDataButton />
           <Button size="lg" onClick={() => router.push('/new-order')}>New Order</Button>
         </div>
       </div>
@@ -187,13 +185,13 @@ export function Dashboard() {
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="font-semibold">{order.customerName}</p>
+                      <p className="font-semibold">{order.customer_name}</p>
                       <Badge variant="outline" className="text-xs">
-                        {order.serviceType}
+                        {order.service_type}
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-600">
-                      {order.phone || 'No phone'} • {new Date(order.createdAt).toLocaleString()}
+                      {order.customer_phone || 'No phone'} • {new Date(order.created_at).toLocaleString()}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -203,8 +201,8 @@ export function Dashboard() {
                         <Badge className={getStatusColor(order.status)} variant="secondary">
                           {order.status}
                         </Badge>
-                        <Badge className={getPaymentColor(order.paymentStatus)} variant="secondary">
-                          {order.paymentStatus}
+                        <Badge className={getPaymentColor(order.payment_status)} variant="secondary">
+                          {order.payment_status}
                         </Badge>
                       </div>
                     </div>

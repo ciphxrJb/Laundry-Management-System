@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, Order } from '@/app/lib/api';
-import { Card, CardContent } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -18,17 +18,9 @@ import {
   AlertDialogTitle,
 } from './ui/alert-dialog';
 import { toast } from 'sonner';
-import { Trash2, Eye, RefreshCw, Search, Calculator, Timer, CheckCircle, Wallet, Phone, ArrowUpRight } from 'lucide-react';
+import { Trash2, Eye, RefreshCw, Search, Calculator, Timer, Wallet, ArrowUpRight, Phone, CheckCircle } from 'lucide-react';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-
-/**
- * COMPLIANCE: Design System v1.0
- * - Unified with Selection Page DNA
- * - Radius: rounded-[2rem]
- * - Background: bg-slate-50
- * - Typography: text-3xl font-bold
- */
 
 export function OrderManagement() {
   const router = useRouter();
@@ -83,7 +75,7 @@ export function OrderManagement() {
   const updateOrderStatus = async (orderId: string, status: any) => {
     try {
       await api.updateOrderStatus(orderId, status);
-      toast.success(`Status: ${status}`);
+      toast.success(`Status updated to ${status}`);
       loadOrders();
     } catch (error: any) {
       toast.error('Sync failed');
@@ -99,147 +91,145 @@ export function OrderManagement() {
   };
 
   return (
-    <div className="space-y-10 pb-20 animate-in fade-in duration-700">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-700">
       
-      {/* STANDARD HEADER DNA */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
+      {/* STANDARD HEADER */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <div className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-3">Management Console</div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Active Registries</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Real-time operational monitoring and control.</p>
+          <h1 className="text-3xl font-bold">Order Registry</h1>
+          <p className="text-gray-600 mt-1">Monitor and manage all laundry activity</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={loadOrders} disabled={loading} className="h-12 w-12 rounded-xl bg-white border-slate-100 shadow-sm active:scale-95 transition-all">
-            <RefreshCw size={18} className={loading ? 'animate-spin' : 'text-slate-400'} />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={loadOrders} disabled={loading} className="h-10 w-10 p-0">
+            <RefreshCw size={18} className={loading ? 'animate-spin' : 'text-gray-500'} />
           </Button>
-          <Button onClick={() => router.push('/new-order')} className="h-12 bg-blue-600 rounded-xl px-8 font-bold text-white shadow-xl shadow-blue-200 active:scale-95 transition-all">
+          <Button onClick={() => router.push('/new-order')} className="bg-blue-600">
             New Transaction
           </Button>
         </div>
       </div>
 
-      {/* COMPACT STATS PLATES */}
+      {/* COMPACT STATS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           { label: 'Revenue Pool', val: `₱${stats.revenue.toLocaleString()}`, icon: Wallet, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Active Loads', val: stats.active, icon: Timer, color: 'text-orange-600', bg: 'bg-orange-50' },
-          { label: 'Unpaid Items', val: stats.unpaid, icon: Calculator, color: 'text-slate-900', bg: 'bg-slate-50' },
+          { label: 'Unpaid Items', val: stats.unpaid, icon: Calculator, color: 'text-gray-900', bg: 'bg-gray-100' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-50 flex items-center justify-between">
-            <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h4 className={`text-2xl font-bold ${stat.color}`}>{stat.val}</h4>
-            </div>
-            <div className={`p-3 ${stat.bg} ${stat.color} rounded-2xl`}>
-              <stat.icon size={20} />
-            </div>
-          </div>
+          <Card key={i}>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">{stat.label}</p>
+                <h4 className={`text-2xl font-bold ${stat.color}`}>{stat.val}</h4>
+              </div>
+              <div className={`p-3 ${stat.bg} ${stat.color} rounded-xl`}>
+                <stat.icon size={20} />
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* UNIFIED LIST PLATE */}
-      <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden bg-white">
-        <CardContent className="p-0">
+      {/* UNIFIED LIST */}
+      <Card>
+        <div className="px-6 pt-6 pb-4 flex flex-col md:flex-row gap-4 justify-between items-center border-b">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="px-8 pt-8 pb-6 flex flex-col md:flex-row gap-6 justify-between items-center border-b border-slate-50">
-              <TabsList className="bg-slate-50 p-1.5 rounded-2xl h-auto">
-                {['all', 'pending', 'ready', 'completed'].map(t => (
-                  <TabsTrigger key={t} value={t} className="rounded-xl px-6 py-2 font-bold text-[10px] uppercase tracking-widest leading-none">
-                    {t}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              
-              <div className="relative w-full md:w-80">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                <Input
-                  placeholder="Filter records..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 h-11 bg-slate-50 border-none rounded-xl text-sm font-medium"
-                />
-              </div>
-            </div>
-
-            <div className="divide-y divide-slate-50">
-              {loading ? (
-                <div className="py-24 text-center text-slate-300 font-bold uppercase text-[10px] tracking-widest">Synchronizing...</div>
-              ) : filteredOrders.length === 0 ? (
-                <div className="py-24 text-center text-slate-300 font-bold uppercase text-[10px] tracking-widest">No matching records</div>
-              ) : (
-                filteredOrders.map((order) => (
-                  <div key={order.id} className="group p-8 flex flex-col md:flex-row md:items-center gap-8 hover:bg-slate-50/50 transition-all duration-300">
-                    
-                    {/* Customer Core */}
-                    <div className="flex-1 flex items-center gap-5">
-                      <div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shadow-sm text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-                        <ArrowUpRight size={20} />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-lg font-bold text-slate-900 tracking-tight leading-none mb-2 hover:text-blue-600 cursor-pointer transition-colors uppercase" onClick={() => router.push(`/receipt/${order.id}`)}>
-                          {order.customer_name}
-                        </h3>
-                        <div className="flex items-center gap-3 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
-                          <span className="flex items-center gap-1"><Phone size={10} /> {order.customer_phone || 'N/A'}</span>
-                          <span className="opacity-30">|</span>
-                          <span>{new Date(order.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Stats Strip */}
-                    <div className="flex items-center gap-10">
-                      <div className="hidden lg:block text-center min-w-[100px]">
-                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Service Type</p>
-                        <Badge variant="secondary" className="bg-slate-100 text-slate-600 rounded-lg px-2 text-[9px] uppercase font-black">{order.service_type}</Badge>
-                      </div>
-                      <div className="text-right min-w-[80px]">
-                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Total</p>
-                        <p className="text-xl font-bold text-slate-900">₱{order.price}</p>
-                      </div>
-                    </div>
-
-                    {/* Action Hub */}
-                    <div className="flex items-center gap-3 md:pl-6 md:border-l md:border-slate-50">
-                      <div className="w-40">
-                        <Select value={order.status} onValueChange={(val) => updateOrderStatus(order.id, val)}>
-                          <SelectTrigger className={`h-11 rounded-xl border-none font-bold text-[10px] uppercase tracking-widest transition-all ${
-                            order.status === 'Ready' ? 'bg-green-100 text-green-700' :
-                            order.status === 'Processing' ? 'bg-blue-100 text-blue-700' :
-                            'bg-slate-100 text-slate-500'
-                          }`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-2xl border-none shadow-2xl">
-                            {statusOptions.map(opt => <SelectItem key={opt} value={opt} className="font-bold text-[10px] uppercase tracking-widest">{opt}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button variant="outline" size="icon" onClick={() => router.push(`/receipt/${order.id}`)} className="h-11 w-11 rounded-xl bg-white border-slate-100 text-slate-300 hover:text-blue-600 hover:border-blue-100 active:scale-95 transition-all">
-                        <Eye size={18} />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl bg-white border-slate-100 text-slate-300 hover:text-red-500 hover:border-red-100 active:scale-95 transition-all" onClick={() => setDeleteOrderId(order.id)}>
-                        <Trash2 size={18} />
-                      </Button>
-                    </div>
-
-                  </div>
-                ))
-              )}
-            </div>
+            <TabsList>
+              {['all', 'pending', 'ready', 'completed'].map(t => (
+                <TabsTrigger key={t} value={t} className="px-4 capitalize">
+                  {t}
+                </TabsTrigger>
+              ))}
+            </TabsList>
           </Tabs>
-        </CardContent>
+          
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <Input
+              placeholder="Search records..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+
+        <div className="divide-y">
+          {loading ? (
+            <div className="py-12 text-center text-gray-400 font-semibold text-sm">Loading records...</div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="py-12 text-center text-gray-400 font-semibold text-sm">No matching records found.</div>
+          ) : (
+            filteredOrders.map((order) => (
+              <div key={order.id} className="p-6 flex flex-col md:flex-row md:items-center gap-6 hover:bg-gray-50 transition-colors duration-200">
+                
+                {/* Customer Details */}
+                <div className="flex-1 flex flex-col min-w-0">
+                  <h3 className="text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => router.push(`/receipt/${order.id}`)}>
+                    {order.customer_name}
+                  </h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <span className="flex items-center gap-1.5"><Phone size={14} /> {order.customer_phone || 'N/A'}</span>
+                    <span>•</span>
+                    <span>{new Date(order.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="flex items-center gap-4">
+                  <div className="w-24">
+                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Service</p>
+                     <Badge variant="outline" className="font-semibold">{order.service_type}</Badge>
+                  </div>
+                  <div className="w-16">
+                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Weight</p>
+                     <span className="text-sm font-semibold text-gray-700">{order.weight}kg</span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-4">
+                  <div className="w-36">
+                    <Select value={order.status} onValueChange={(val) => updateOrderStatus(order.id, val)}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="w-24 text-right">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total</p>
+                    <p className="text-lg font-bold text-gray-900">₱{order.price}</p>
+                  </div>
+                  
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="ghost" size="icon" onClick={() => router.push(`/receipt/${order.id}`)} className="text-gray-400 hover:text-blue-600">
+                      <Eye size={18} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-500" onClick={() => setDeleteOrderId(order.id)}>
+                      <Trash2 size={18} />
+                    </Button>
+                  </div>
+                </div>
+
+              </div>
+            ))
+          )}
+        </div>
       </Card>
 
       <AlertDialog open={!!deleteOrderId} onOpenChange={() => setDeleteOrderId(null)}>
-        <AlertDialogContent className="rounded-[2.5rem] border-none shadow-2xl">
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-bold text-xl uppercase tracking-tight">Delete Registry Entry?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-500 font-medium">This transaction record will be removed permanently from the registry. This action cannot be reversed.</AlertDialogDescription>
+            <AlertDialogTitle>Delete Order?</AlertDialogTitle>
+            <AlertDialogDescription>This transaction record will be removed permanently.</AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 pt-4">
-            <AlertDialogCancel className="rounded-xl border-slate-100 font-black text-[10px] uppercase tracking-widest">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setDeleteOrderId(null)} className="rounded-xl bg-red-600 font-black text-[10px] uppercase tracking-widest shadow-xl shadow-red-100">Confirm Removal</AlertDialogAction>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {toast.info('Feature disabled temporarily'); setDeleteOrderId(null);}} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -161,47 +161,47 @@ export default function ModeSelection() {
 
       </div>
 
-      {/* PIN MODAL (Design System Compliant) */}
+      {/* PIN MODAL (Native Standard) */}
       {showPinModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-100/50 backdrop-blur-2xl animate-in fade-in duration-700" onClick={() => { setShowPinModal(false); setPin(''); }} />
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => { setShowPinModal(false); setPin(''); }} />
           
-          <div className="relative max-w-sm w-full bg-white rounded-[2.5rem] shadow-2xl shadow-black/10 border border-slate-100 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-12 duration-700">
-            <div className="p-12 text-center bg-slate-50 border-b border-slate-100">
-              <div className="inline-flex p-5 bg-blue-600 rounded-[1.5rem] mb-8 shadow-xl shadow-blue-200">
-                <Lock className="w-8 h-8 text-white" />
+          <div className="relative max-w-sm w-full bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 text-center border-b bg-slate-50/50">
+              <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight leading-none mb-1">MANAGER PIN</h2>
-              <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px] mt-4">Verification Required</p>
+              <h2 className="text-xl font-bold text-slate-900">Admin Verification</h2>
+              <p className="text-slate-500 text-sm mt-1">Enter your security PIN to access the dashboard</p>
             </div>
 
-            <div className="p-12">
-              <div className="flex justify-center gap-6 mb-12">
+            <div className="p-6">
+              <div className="flex justify-center gap-4 mb-8">
                 {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${pin.length > i ? 'bg-blue-600 scale-125 shadow-lg shadow-blue-300' : 'bg-slate-200'}`} />
+                  <div key={i} className={`w-3 h-3 rounded-full transition-all duration-200 ${pin.length > i ? 'bg-blue-600 scale-125' : 'bg-slate-200'}`} />
                 ))}
               </div>
 
-              <div className="grid grid-cols-3 gap-5">
+              <div className="grid grid-cols-3 gap-3">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                   <button
                     key={num}
                     onClick={() => handleKeyPress(num.toString())}
                     disabled={loading}
-                    className="h-16 rounded-[1.5rem] bg-white border border-slate-100 shadow-sm hover:shadow-md hover:bg-slate-50 flex items-center justify-center text-3xl font-black text-slate-800 active:scale-95 transition-all"
+                    className="h-14 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-xl font-semibold text-slate-700 active:scale-95 transition-all"
                   >
                     {num}
                   </button>
                 ))}
-                <button onClick={() => setPin('')} disabled={loading} className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reset</button>
-                <button onClick={() => handleKeyPress('0')} disabled={loading} className="h-16 rounded-[1.5rem] bg-white border border-slate-100 flex items-center justify-center text-3xl font-black text-slate-800 active:scale-95 transition-all">0</button>
-                <button onClick={() => { setShowPinModal(false); setPin(''); }} disabled={loading} className="flex items-center justify-center text-slate-200"><X size={24} /></button>
+                <button onClick={() => setPin('')} disabled={loading} className="h-14 rounded-lg flex items-center justify-center text-sm font-bold text-red-600 hover:bg-red-50 transition-all">CLEAR</button>
+                <button onClick={() => handleKeyPress('0')} disabled={loading} className="h-14 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-xl font-semibold text-slate-700 active:scale-95 transition-all">0</button>
+                <button onClick={() => { setShowPinModal(false); setPin(''); }} disabled={loading} className="h-14 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"><X size={20} /></button>
               </div>
             </div>
 
             {loading && (
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
               </div>
             )}
           </div>

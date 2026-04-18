@@ -137,7 +137,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
 
         {/* Elegant Account Widget */}
-        <div className="mb-10 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3 relative overflow-hidden group hover:border-blue-200 transition-colors">
+        <div className="mb-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3 relative overflow-hidden group hover:border-blue-200 transition-colors">
           <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:border-blue-100 transition-all">
             <User size={20} />
           </div>
@@ -147,6 +147,15 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
 
+        <Button
+          variant="outline"
+          className="w-full h-10 mb-8 rounded-xl justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-bold transition-all border-dashed"
+          onClick={handleSwitchMode}
+        >
+          <LogOut size={16} className="mr-2" />
+          Switch Mode
+        </Button>
+
         <nav className="flex flex-col gap-2 flex-1">
           <div className="px-2 mb-2">
             <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Environments</p>
@@ -154,16 +163,6 @@ export function Layout({ children }: LayoutProps) {
           <NavLinks />
         </nav>
 
-        <div className="mt-8 pt-8 border-t border-slate-50">
-          <Button
-            variant="ghost"
-            className="w-full h-12 rounded-xl justify-start text-slate-400 hover:text-red-500 hover:bg-red-50 font-bold transition-all group"
-            onClick={handleSwitchMode}
-          >
-            <LogOut size={18} className="mr-3 transition-transform group-hover:-translate-x-1" />
-            Switch Mode
-          </Button>
-        </div>
       </aside>
 
       {/* Content Area */}

@@ -68,67 +68,71 @@ export function PinGuard({ children }: PinGuardProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="max-w-sm w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-        <div className="p-8 text-center bg-slate-50 border-b">
-          <div className="inline-flex p-4 bg-blue-100 rounded-2xl mb-4">
-            <Lock className="w-8 h-8 text-blue-600" />
+    <div className="w-full min-h-[80vh] flex flex-col items-center justify-center p-4 animate-in fade-in duration-500">
+      <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border overflow-hidden relative">
+        <div className="p-6 text-center border-b bg-gray-50/50">
+          <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+            <Lock className="w-6 h-6 text-blue-600" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">Manager Access</h2>
-          <p className="text-slate-500 text-sm mt-1">Please enter your 4-digit PIN to continue</p>
+          <h2 className="text-xl font-bold">Admin Verification</h2>
+          <p className="text-gray-500 text-sm mt-1">Enter your security PIN to access metrics</p>
         </div>
 
-        <div className="p-8">
+        <div className="p-6">
           {/* PIN Indicators */}
-          <div className="flex justify-center gap-4 mb-10">
+          <div className="flex justify-center gap-4 mb-8">
             {[0, 1, 2, 3].map((i) => (
               <div 
                 key={i} 
-                className={`w-4 h-4 rounded-full border-2 border-slate-200 transition-all duration-200 ${
-                  pin.length > i ? 'bg-blue-600 border-blue-600 scale-125' : 'bg-transparent'
+                className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                  pin.length > i ? 'bg-blue-600 scale-125' : 'bg-gray-200'
                 }`}
               />
             ))}
           </div>
 
           {/* Keypad */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-              <button
+              <Button
                 key={num}
-                onClick={() => handleKeyPress(num.toString())}
+                variant="outline"
                 disabled={loading}
-                className="h-16 rounded-2xl bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-xl font-bold text-slate-700 active:scale-90 transition-all"
+                onClick={() => handleKeyPress(num.toString())}
+                className="h-14 text-xl font-semibold hover:bg-gray-50"
               >
                 {num}
-              </button>
+              </Button>
             ))}
-            <button
-              onClick={clearPin}
+            <Button
+              variant="ghost"
               disabled={loading}
-              className="h-16 rounded-2xl bg-red-50 hover:bg-red-100 flex items-center justify-center text-sm font-bold text-red-600 transition-all"
+              onClick={clearPin}
+              className="h-14 text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50"
             >
               CLEAR
-            </button>
-            <button
-              onClick={() => handleKeyPress('0')}
+            </Button>
+            <Button
+              variant="outline"
               disabled={loading}
-              className="h-16 rounded-2xl bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-xl font-bold text-slate-700 active:scale-90 transition-all"
+              onClick={() => handleKeyPress('0')}
+              className="h-14 text-xl font-semibold hover:bg-gray-50"
             >
               0
-            </button>
-            <button
-              onClick={() => router.push('/')}
+            </Button>
+            <Button
+              variant="ghost"
               disabled={loading}
-              className="h-16 rounded-2xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all"
+              onClick={() => router.push('/')}
+              className="h-14 text-gray-500 hover:bg-gray-100"
             >
-              <X className="w-5 h-5 text-slate-600" />
-            </button>
+              <X className="w-5 h-5" />
+            </Button>
           </div>
         </div>
 
         {loading && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, Order } from '../lib/api';
+import { api, Order, Customer } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { ThermalReceipt } from './ThermalReceipt';
 import { Input } from './ui/input';
@@ -41,6 +41,7 @@ const serviceTypes: ServiceOption[] = [
 export function NewOrder() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [customersList, setCustomersList] = useState<Customer[]>([]);
   const initialFormState = {
     customerName: '',
     phone: '',
@@ -54,6 +55,37 @@ export function NewOrder() {
 
   const [formData, setFormData] = useState(initialFormState);
   const [printedOrder, setPrintedOrder] = useState<Order | null>(null);
+
+  // Load returning customers for autocomplete memory
+  useEffect(() => {
+    api.getCustomers()
+      .then(data => {
+        if (Array.isArray(data)) setCustomersList(data);
+      })
+      .catch(err => console.error("Could not load customers for autofill", err));
+  }, []);
+
+  // Autofill Handler for Name
+  const handleNameChange = (val: string) => {
+    const match = customersList.find(c => c.name.toLowerCase() === val.toLowerCase());
+    if (match && match.phone) {
+      const matchedPhone = match.phone; // capture it so TS doesn't lose narrowing
+      setFormData(prev => ({ ...prev, customerName: match.name, phone: matchedPhone }));
+    } else {
+      setFormData(prev => ({ ...prev, customerName: val }));
+    }
+  };
+
+  // Autofill Handler for Phone
+  const handlePhoneChange = (val: string) => {
+    const cleanPhone = val.replace(/\D/g, '').slice(0, 11);
+    const match = customersList.find(c => c.phone === cleanPhone);
+    if (match && cleanPhone.length === 11) {
+      setFormData(prev => ({ ...prev, phone: cleanPhone, customerName: prev.customerName || match.name }));
+    } else {
+      setFormData(prev => ({ ...prev, phone: cleanPhone }));
+    }
+  };
 
   useEffect(() => {
     if (formData.serviceType && formData.weight) {
@@ -129,13 +161,19 @@ export function NewOrder() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <datalist id="customer-names">
+                  {customersList.map(c => <option key={c.id} value={c.name} />)}
+                </datalist>
+                
                 <div className="space-y-2">
                   <Label htmlFor="customerName">Full Name</Label>
                   <Input
                     id="customerName"
+                    list="customer-names"
                     value={formData.customerName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
+                    onChange={(e) => handleNameChange(e.target.value)}
                     placeholder="Enter customer name"
+                    autoComplete="off"
                   />
                 </div>
                 <div className="space-y-2">
@@ -143,10 +181,7 @@ export function NewOrder() {
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 11);
-                      setFormData(prev => ({ ...prev, phone: val }));
-                    }}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
                     placeholder="0917 123 4567"
                     maxLength={11}
                   />

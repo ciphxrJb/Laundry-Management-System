@@ -25,6 +25,17 @@ export type Customer = {
   user_id: string;
 };
 
+export type DashboardStats = {
+  totalOrdersToday: number;
+  pendingOrders: number;
+  completedOrders: number;
+  readyForPickup: number;
+  totalIncomeToday: number;
+  totalIncomeWeek: number;
+  unpaidOrders: number;
+  recentOrders: Order[];
+};
+
 // HELPER: Get the current Account ID (Auth UID)
 async function getUserId(): Promise<string> {
   const { data: { session }, error: authError } = await supabase.auth.getSession();
@@ -86,6 +97,41 @@ export const api = {
       console.error("Unified 2.0 Create Error:", error);
       throw new Error(`DB Error: ${error.message}`);
     }
+
+    // --- AUTO-CUSTOMER TRACKING ---
+    // Check if customer already exists for this user_id
+    const { data: existingCustomers } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('name', dbData.customer_name)
+      .limit(1);
+
+    const existingCustomer = existingCustomers?.[0];
+
+    if (existingCustomer) {
+      // Update existing customer's lifetime value and visits
+      await supabase
+        .from('customers')
+        .update({
+          total_orders: (existingCustomer.total_orders || 0) + 1,
+          total_spent: Number(existingCustomer.total_spent || 0) + Number(dbData.price),
+          phone: dbData.customer_phone || existingCustomer.phone // update phone if they gave a new one
+        })
+        .eq('id', existingCustomer.id);
+    } else {
+      // Create new customer profile
+      await supabase
+        .from('customers')
+        .insert({
+          user_id: userId,
+          name: dbData.customer_name,
+          phone: dbData.customer_phone,
+          total_orders: 1,
+          total_spent: Number(dbData.price)
+        });
+    }
+
     return { order: data as Order };
   },
 
@@ -120,20 +166,32 @@ export const api = {
     const { data: orders, error } = await supabase
       .from('orders')
       .select('*')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
 
     const today = new Date().toISOString().split('T')[0];
-    const todayOrders = orders?.filter(o => o.created_at.startsWith(today)) || [];
-    const revenue = orders?.reduce((sum, o) => sum + Number(o.price || 0), 0) || 0;
-    const pending = orders?.filter(o => o.status === 'Pending').length || 0;
+    
+    // Safety check
+    const validOrders = orders || [];
+
+    const todayOrdersObj = validOrders.filter(o => o.created_at.startsWith(today));
+    
+    // Weekly calculation (last 7 days rough calc)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const weeklyOrders = validOrders.filter(o => new Date(o.created_at) >= sevenDaysAgo);
 
     return {
-      totalOrders: orders?.length || 0,
-      todayOrders: todayOrders.length,
-      revenue,
-      pendingOrders: pending
+      totalOrdersToday: todayOrdersObj.length,
+      pendingOrders: validOrders.filter(o => o.status === 'Pending' || o.status === 'Processing').length,
+      completedOrders: validOrders.filter(o => o.status === 'Completed').length,
+      readyForPickup: validOrders.filter(o => o.status === 'Ready').length,
+      totalIncomeToday: todayOrdersObj.reduce((sum, o) => sum + Number(o.price || 0), 0),
+      totalIncomeWeek: weeklyOrders.reduce((sum, o) => sum + Number(o.price || 0), 0),
+      unpaidOrders: validOrders.filter(o => o.payment_status === 'Unpaid').length,
+      recentOrders: validOrders.slice(0, 5) // Send the 5 most recent orders
     };
   }
 };
