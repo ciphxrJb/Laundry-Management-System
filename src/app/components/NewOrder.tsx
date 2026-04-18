@@ -88,14 +88,12 @@ export function NewOrder() {
   };
 
   useEffect(() => {
-    if (formData.serviceType && formData.weight) {
+    if (formData.serviceType) {
       const service = serviceTypes.find(s => s.value === formData.serviceType);
       if (service) {
-        const kg = parseFloat(formData.weight);
-        if (!isNaN(kg) && kg > 0) {
-          const computed = service.basePrice + kg * service.weightPrice;
-          setFormData(prev => ({ ...prev, price: computed.toFixed(2) }));
-        }
+        const kg = parseFloat(formData.weight) || 0;
+        const computed = service.basePrice + (kg * service.weightPrice);
+        setFormData(prev => ({ ...prev, price: computed.toFixed(2) }));
       }
     }
   }, [formData.serviceType, formData.weight]);
