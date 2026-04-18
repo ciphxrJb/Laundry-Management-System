@@ -46,15 +46,19 @@ async function getUserId(): Promise<string> {
 export const api = {
   // Auth
   getMe: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return null;
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) return null;
 
-    return {
-      user: session.user,
-      shopId: session.user.id, // We use User ID as Shop ID in Unified 2.0
-      isAdmin: true,
-      role: 'owner'
-    };
+      return {
+        user: session.user,
+        shopId: session.user.id, // We use User ID as Shop ID in Unified 2.0
+        isAdmin: true,
+        role: 'owner'
+      };
+    } catch {
+      return null;
+    }
   },
 
   // Orders (Unified 2.0)

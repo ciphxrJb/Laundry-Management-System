@@ -103,19 +103,19 @@ export default function ModeSelection() {
       <div className={`w-full max-w-5xl relative z-10 transition-all duration-700 ${showPinModal ? 'blur-2xl scale-95 opacity-40 px-6' : 'scale-100 opacity-100'}`}>
         
         {/* Top Header (Design System Compliant) */}
-        <div className="w-full flex justify-between items-center mb-16 px-4 animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div className="w-full flex justify-between items-center mb-8 lg:mb-16 px-4 animate-in fade-in slide-in-from-top-4 duration-1000">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white shadow-sm rounded-xl flex items-center justify-center border border-slate-100">
-              <Droplets className="text-blue-600 w-5 h-5" />
+            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-white shadow-sm rounded-xl flex items-center justify-center border border-slate-100">
+              <Droplets className="text-blue-600 w-4 h-4 lg:w-5 lg:h-5" />
             </div>
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Authenticated Operator</p>
-              <p className="text-sm font-bold text-slate-900">{userEmail}</p>
+              <p className="text-[8px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 lg:mb-1.5">Authenticated Operator</p>
+              <p className="text-xs lg:text-sm font-bold text-slate-900">{userEmail}</p>
             </div>
           </div>
           <button 
             onClick={handleLogout}
-            className="group flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-red-600 hover:border-red-100 transition-all font-bold text-[10px] uppercase tracking-widest shadow-sm active:scale-95"
+            className="group flex items-center gap-2 px-4 lg:px-6 py-2 lg:py-2.5 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-red-600 hover:border-red-100 transition-all font-bold text-[9px] lg:text-[10px] uppercase tracking-widest shadow-sm active:scale-95"
           >
             <Lock size={12} className="group-hover:rotate-12 transition-transform" />
             Sign Out
@@ -123,25 +123,25 @@ export default function ModeSelection() {
         </div>
 
         {/* HORIZONTAL TERMINAL CARDS (Design System Compliant) */}
-        <div className="grid md:grid-cols-2 gap-10">
+        <div className="grid md:grid-cols-2 gap-4 lg:gap-10">
           
           {/* POS Terminal */}
           <button 
             onClick={() => selectMode('system')}
-            className="group relative bg-white border border-slate-100 p-12 rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-blue-600/10 transition-all duration-500 hover:-translate-y-2 block w-full text-left overflow-hidden animate-in fade-in slide-in-from-left-8 duration-700"
+            className="group relative bg-white border border-slate-100 p-6 lg:p-12 rounded-[1.5rem] lg:rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-blue-600/10 transition-all duration-500 hover:-translate-y-2 block w-full text-left overflow-hidden animate-in fade-in slide-in-from-left-8 duration-700"
           >
-            <div className="absolute top-0 right-0 w-40 h-40 bg-blue-50/50 rounded-full translate-x-12 -translate-y-12 transition-transform group-hover:scale-150 duration-700 font-bold" />
+            <div className="absolute top-0 right-0 w-32 h-32 lg:w-40 lg:h-40 bg-blue-50/50 rounded-full translate-x-12 -translate-y-12 transition-transform group-hover:scale-150 duration-700 font-bold" />
             
             <div className="relative z-10">
-              <div className="p-5 bg-blue-600 rounded-2xl w-fit mb-10 text-white shadow-xl shadow-blue-600/30 group-hover:rotate-6 group-hover:scale-110 transition-all duration-500">
-                <Monitor size={32} />
+              <div className="p-3 lg:p-5 bg-blue-600 rounded-xl lg:rounded-2xl w-fit mb-6 lg:mb-10 text-white shadow-xl shadow-blue-600/30 group-hover:rotate-6 group-hover:scale-110 transition-all duration-500">
+                <Monitor size={24} className="lg:w-8 lg:h-8" />
               </div>
               
-              <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3">POS Service Terminal</div>
-              <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-3">System POS</h2>
-              <p className="text-base text-slate-500 leading-relaxed font-medium pr-8 opacity-80">Track orders, manage laundry processing, and issue digital receipts.</p>
+              <div className="text-[8px] lg:text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 lg:mb-3">POS Service Terminal</div>
+              <h2 className="text-xl lg:text-3xl font-bold text-slate-900 tracking-tight mb-2 lg:mb-3">System POS</h2>
+              <p className="text-xs lg:text-base text-slate-500 leading-relaxed font-medium lg:pr-8 opacity-80 line-clamp-2 lg:line-clamp-none">Track orders, manage laundry processing, and issue digital receipts.</p>
               
-              <div className="mt-10 flex items-center gap-2 text-blue-600 font-bold text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 transition-all duration-500">
+              <div className="mt-6 lg:mt-10 flex items-center gap-2 text-blue-600 font-bold text-[9px] lg:text-[10px] uppercase tracking-widest opacity-0 lg:opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 transition-all duration-500">
                 Launch Workspace <ChevronRight size={14} />
               </div>
             </div>
@@ -150,20 +150,20 @@ export default function ModeSelection() {
           {/* Admin Terminal */}
           <button 
             onClick={() => selectMode('admin')}
-            className="group relative bg-white border border-slate-100 p-12 rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-900/10 transition-all duration-500 hover:-translate-y-2 block w-full text-left overflow-hidden animate-in fade-in slide-in-from-right-8 duration-700"
+            className="group relative bg-white border border-slate-100 p-6 lg:p-12 rounded-[1.5rem] lg:rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-900/10 transition-all duration-500 hover:-translate-y-2 block w-full text-left overflow-hidden animate-in fade-in slide-in-from-right-8 duration-700"
           >
-            <div className="absolute top-0 right-0 w-40 h-40 bg-slate-50/50 rounded-full translate-x-12 -translate-y-12 transition-transform group-hover:scale-150 duration-700" />
+            <div className="absolute top-0 right-0 w-32 h-32 lg:w-40 lg:h-40 bg-slate-50/50 rounded-full translate-x-12 -translate-y-12 transition-transform group-hover:scale-150 duration-700" />
             
             <div className="relative z-10">
-              <div className="p-5 bg-slate-900 rounded-2xl w-fit mb-10 text-white shadow-xl shadow-slate-900/30 group-hover:-rotate-6 group-hover:scale-110 transition-all duration-500">
-                <Settings size={32} />
+              <div className="p-3 lg:p-5 bg-slate-900 rounded-xl lg:rounded-2xl w-fit mb-6 lg:mb-10 text-white shadow-xl shadow-slate-900/30 group-hover:-rotate-6 group-hover:scale-110 transition-all duration-500">
+                <Settings size={24} className="lg:w-8 lg:h-8" />
               </div>
               
-              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Core Administration</div>
-              <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-3">Management</h2>
-              <p className="text-base text-slate-500 leading-relaxed font-medium pr-8 opacity-80">Access financial reports, shop analytics, and staff management.</p>
+              <div className="text-[8px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 lg:mb-3">Core Administration</div>
+              <h2 className="text-xl lg:text-3xl font-bold text-slate-900 tracking-tight mb-2 lg:mb-3">Management</h2>
+              <p className="text-xs lg:text-base text-slate-500 leading-relaxed font-medium lg:pr-8 opacity-80 line-clamp-2 lg:line-clamp-none">Access financial reports, shop analytics, and staff management.</p>
               
-              <div className="mt-10 flex items-center gap-2 text-slate-900 font-bold text-[10px] uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 transition-all duration-500">
+              <div className="mt-6 lg:mt-10 flex items-center gap-2 text-slate-900 font-bold text-[9px] lg:text-[10px] uppercase tracking-widest opacity-0 lg:opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 transition-all duration-500">
                 Launch Dashboard <ChevronRight size={14} />
               </div>
             </div>
@@ -172,10 +172,10 @@ export default function ModeSelection() {
         </div>
 
         {/* Footer (Design System Compliant) */}
-        <div className="mt-20 flex justify-center animate-in fade-in duration-1000 delay-500">
-          <div className="flex items-center gap-2.5 px-6 py-3 bg-white rounded-full border border-slate-100 shadow-sm">
-            <Sparkles className="text-blue-500 w-4 h-4" />
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enterprise Edition v1.2.0</span>
+        <div className="mt-10 lg:mt-20 flex justify-center animate-in fade-in duration-1000 delay-500">
+          <div className="flex items-center gap-2 py-2 lg:py-3 px-4 lg:px-6 bg-white rounded-full border border-slate-100 shadow-sm">
+            <Sparkles className="text-blue-500 w-3 h-3 lg:w-4 lg:h-4" />
+            <span className="text-[8px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest">Enterprise Edition v1.2.0</span>
           </div>
         </div>
 

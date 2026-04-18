@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from './ui/alert-dialog';
 import { toast } from 'sonner';
-import { Trash2, Eye, RefreshCw, Search, Calculator, Timer, Wallet, ArrowUpRight, Phone, CheckCircle } from 'lucide-react';
+import { Trash2, Eye, RefreshCw, Search, Calculator, Timer, Wallet, ArrowUpRight, Phone, CheckCircle, Plus } from 'lucide-react';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
@@ -99,31 +99,28 @@ export function OrderManagement() {
           <h1 className="text-3xl font-bold">Order Registry</h1>
           <p className="text-gray-600 mt-1">Monitor and manage all laundry activity</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={loadOrders} disabled={loading} className="h-10 w-10 p-0">
-            <RefreshCw size={18} className={loading ? 'animate-spin' : 'text-gray-500'} />
-          </Button>
-          <Button onClick={() => router.push('/new-order')} className="bg-blue-600">
+        <div className="hidden lg:flex items-center gap-2">
+          <Button onClick={() => router.push('/new-order')} className="bg-blue-600 rounded-xl px-6 h-12 font-bold shadow-lg shadow-blue-100 transition-all active:scale-95">
             New Transaction
           </Button>
         </div>
       </div>
 
-      {/* COMPACT STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* STATS ROW (3 COLUMNS ON ALL SCREENS) */}
+      <div className="grid grid-cols-3 gap-3 lg:gap-6">
         {[
           { label: 'Revenue Pool', val: `₱${stats.revenue.toLocaleString()}`, icon: Wallet, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Active Loads', val: stats.active, icon: Timer, color: 'text-orange-600', bg: 'bg-orange-50' },
           { label: 'Unpaid Items', val: stats.unpaid, icon: Calculator, color: 'text-gray-900', bg: 'bg-gray-100' },
         ].map((stat, i) => (
           <Card key={i}>
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">{stat.label}</p>
-                <h4 className={`text-2xl font-bold ${stat.color}`}>{stat.val}</h4>
+            <CardContent className="p-3 lg:p-6 flex flex-col lg:flex-row items-center lg:justify-between gap-2 text-center lg:text-left">
+              <div className="min-w-0">
+                <p className="text-[9px] lg:text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1 truncate">{stat.label}</p>
+                <h4 className="text-sm lg:text-2xl font-bold truncate">{stat.val}</h4>
               </div>
-              <div className={`p-3 ${stat.bg} ${stat.color} rounded-xl`}>
-                <stat.icon size={20} />
+              <div className={`p-1.5 lg:p-3 ${stat.bg} ${stat.color} rounded-lg lg:rounded-xl hidden lg:flex shrink-0 shadow-sm`}>
+                <stat.icon size={16} className="lg:w-5 lg:h-5" />
               </div>
             </CardContent>
           </Card>
@@ -233,6 +230,19 @@ export function OrderManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* MOBILE STICKY ACTION BAR */}
+      <div className="lg:hidden fixed bottom-6 left-0 right-0 px-4 z-40 pointer-events-none print:hidden">
+        <div className="max-w-md mx-auto pointer-events-auto">
+          <Button 
+            onClick={() => router.push('/new-order')}
+            className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-[0_8px_30px_rgb(37,99,235,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2 text-base"
+          >
+            <Plus size={20} />
+            New Transaction
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

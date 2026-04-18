@@ -14,10 +14,11 @@ import {
   Droplets,
   ChevronRight,
   User,
+  RefreshCw,
   Settings as SettingsIcon
 } from 'lucide-react';
 import { Button } from './ui/button';
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from './ui/sheet';
 import { api } from '../lib/api';
 
 interface LayoutProps {
@@ -98,8 +99,8 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col lg:flex-row font-sans">
-      {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b p-4 flex items-center justify-between print:hidden">
+      {/* Mobile Header (Hidden on Tablet and above) */}
+      <div className="md:hidden sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b p-4 flex items-center justify-between print:hidden">
         <div className="flex items-center gap-2">
           <Droplets className="text-blue-600 w-6 h-6" />
           <h1 className="text-xl font-black text-slate-900 tracking-tight">Laundry<span className="text-blue-600">POS</span></h1>
@@ -111,19 +112,46 @@ export function Layout({ children }: LayoutProps) {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0 border-none bg-white">
-            <div className="p-8 border-b">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tighter">NAVIGATE</h2>
+            <SheetHeader className="sr-only">
+              <SheetTitle>Navigation Menu</SheetTitle>
+            </SheetHeader>
+            <div className="p-8 border-b flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+                <User size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Authenticated</p>
+                <p className="text-xs font-bold text-slate-700 truncate">{userEmail}</p>
+              </div>
             </div>
             <nav className="flex flex-col gap-2 p-4">
+              <div className="px-2 mb-2 mt-4 lg:hidden">
+                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Navigation</p>
+              </div>
               <NavLinks onClick={() => setMobileMenuOpen(false)} />
-              <div className="mt-8 pt-8 border-t">
+              <div className="mt-8 pt-6 border-t flex flex-col gap-2">
                 <Button
-                  variant="outline"
-                  className="w-full justify-start h-12 rounded-xl border-dashed"
-                  onClick={handleSwitchMode}
+                  variant="secondary"
+                  className="w-full justify-start h-12 rounded-xl bg-slate-100 border-none text-slate-700 font-bold gap-3"
+                  onClick={() => {
+                    handleSwitchMode();
+                    setMobileMenuOpen(false);
+                  }}
                 >
-                  <LogOut size={16} className="mr-2" />
-                  Sign Out
+                  <RefreshCw size={18} className="text-slate-500" />
+                  Switch Mode
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-12 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 font-bold gap-3"
+                  onClick={async () => {
+                    const { supabase } = await import('../lib/supabase');
+                    await supabase.auth.signOut();
+                    router.push('/login');
+                  }}
+                >
+                  <LogOut size={18} />
+                  Log Out Account
                 </Button>
               </div>
             </nav>
@@ -131,8 +159,8 @@ export function Layout({ children }: LayoutProps) {
         </Sheet>
       </div>
 
-      {/* REFINED DESKTOP SIDEBAR */}
-      <aside className="hidden lg:flex w-72 h-screen sticky top-0 flex-col bg-white border-r p-6 print:hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+      {/* REFINED SIDEBAR (Visible on Tablet and above) */}
+      <aside className="hidden md:flex w-72 h-screen sticky top-0 flex-col bg-white border-r p-6 print:hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
         <div className="flex items-center gap-2.5 mb-10 px-2">
           <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
             <Droplets size={20} />
@@ -170,7 +198,7 @@ export function Layout({ children }: LayoutProps) {
       </aside>
 
       {/* Content Area */}
-      <main className="flex-1 p-6 lg:p-10 w-full overflow-x-hidden">
+      <main className="flex-1 p-4 md:p-10 w-full overflow-x-hidden">
         {children}
       </main>
     </div>

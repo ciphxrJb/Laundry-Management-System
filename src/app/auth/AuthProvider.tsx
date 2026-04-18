@@ -70,12 +70,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const syncSession = async () => {
       try {
-        const { data } = await withTimeout(supabase.auth.getSession(), 8000);
+        const { data, error } = await withTimeout(supabase.auth.getSession(), 8000);
+        if (error) throw error;
         if (!mounted) return;
         const currentUser = data.session?.user ?? null;
         await applyServerContext(currentUser);
-      } catch {
-        // Fail open to login page instead of indefinite loading.
+      } catch (err: any) {
+        console.warn("Auth sync issue:", err.message);
+        // If the token is invalid, clear local session to force a fresh login
+        if (err.message?.includes('Refresh Token Not Found') || err.message?.includes('invalid_refresh_token')) {
+          await supabase.auth.signOut();
+        }
         if (mounted) {
           setUser(null);
           setRole('staff');
@@ -93,11 +98,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Session refreshed successfully');
+        }
+        if (event === 'SIGNED_OUT') {
+          await applyServerContext(null);
+          return;
+        }
+
         const currentUser = session?.user ?? null;
         await applyServerContext(currentUser);
-      } catch {
+      } catch (err: any) {
+        console.error("Auth change error:", err);
         setUser(null);
         setRole('staff');
         setShopId(null);
