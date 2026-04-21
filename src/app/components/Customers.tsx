@@ -11,7 +11,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { toast } from 'sonner';
 import { Search, User, Phone, Package, DollarSign, Users, ChevronRight, Calendar } from 'lucide-react';
 
+import { useAuth } from '../auth/AuthProvider';
+
 export function Customers() {
+  const { shopId } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,8 +30,12 @@ export function Customers() {
   }, [initialSearch]);
 
   useEffect(() => {
-    loadCustomers();
-  }, []);
+    if (shopId) {
+      loadCustomers();
+    } else {
+      setLoading(false);
+    }
+  }, [shopId]);
 
   useEffect(() => {
     filterCustomers();

@@ -22,18 +22,31 @@ import { Trash2, Eye, RefreshCw, Search, Calculator, Timer, Wallet, ArrowUpRight
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
+import { useAuth } from '../auth/AuthProvider';
+
 export function OrderManagement() {
   const router = useRouter();
+  const { shopId } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [shopName, setShopName] = useState('Order Registry');
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    if (shopId) {
+      loadOrders();
+      // Fetch shop name for branding
+      import('../lib/supabase').then(({ supabase }) => {
+        supabase.from('shops').select('name').eq('id', shopId).single()
+          .then(({ data }) => { if (data?.name) setShopName(data.name); });
+      });
+    } else {
+      setLoading(false);
+    }
+  }, [shopId]);
 
   useEffect(() => {
     filterOrders();
@@ -42,7 +55,7 @@ export function OrderManagement() {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const data = await api.getOrders();
+      const data = await api.getOrders(shopId);
       setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       setOrders([]);
@@ -74,7 +87,7 @@ export function OrderManagement() {
 
   const updateOrderStatus = async (orderId: string, status: any) => {
     try {
-      await api.updateOrderStatus(orderId, status);
+      await api.updateOrderStatus(orderId, status, shopId);
       toast.success(`Status updated to ${status}`);
       loadOrders();
     } catch (error: any) {
@@ -96,8 +109,8 @@ export function OrderManagement() {
       {/* STANDARD HEADER */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Order Registry</h1>
-          <p className="text-gray-600 mt-1">Monitor and manage all laundry activity</p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">{shopName}</h1>
+          <p className="text-slate-500 font-medium">Monitor and manage all laundry activity</p>
         </div>
         <div className="hidden lg:flex items-center gap-2">
           <Button onClick={() => router.push('/new-order')} className="bg-blue-600 rounded-xl px-6 h-12 font-bold shadow-lg shadow-blue-100 transition-all active:scale-95">

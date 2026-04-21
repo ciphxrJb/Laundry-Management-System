@@ -305,20 +305,12 @@ app.put("/orders/:id", async (c) => {
       return auth;
     }
 
-    if (!auth.shopId) {
-      return c.json({ error: "No shop access" }, 403);
-    }
-
     const orderId = c.req.param("id");
     const body = await c.req.json();
     
     const order = await repository.getOrderById(orderId);
     if (!order) {
       return c.json({ error: "Order not found" }, 404);
-    }
-
-    if (order.shopId !== auth.shopId) {
-      return c.json({ error: "Access denied" }, 403);
     }
 
     const updatedOrder = await repository.updateOrder(orderId, body);

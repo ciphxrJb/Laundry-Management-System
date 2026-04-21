@@ -2,6 +2,47 @@
 @import '../styles/tailwind.css';
 @import '../styles/theme.css';
 
+/* Premium Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e2e8f0; /* slate-200 */
+  border-radius: 100px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb; /* blue-600 */
+  border-radius: 100px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+
+/* Utility for thin inner scrollbars (like Dashboard Ledger) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #f1f5f9; /* slate-100 */
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* slate-300 */
+}
+
 /* Print styles for receipts */
 @media print {
   @page {

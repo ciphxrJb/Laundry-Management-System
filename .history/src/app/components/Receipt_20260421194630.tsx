@@ -6,7 +6,7 @@ import { api, Order } from '@/app/lib/api';
 import { supabase } from '@/app/lib/supabase';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { ArrowLeft, Printer, Loader2, X } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 
 function ReceiptContent() {
   const params = useParams();
@@ -22,6 +22,17 @@ function ReceiptContent() {
   });
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.user_metadata) {
+        const meta = session.user.user_metadata;
+        setShopInfo({
+          name: meta.shop_name || 'Laundry POS',
+          address: meta.shop_address || '123 Main Street\nCityville',
+          phone: meta.shop_phone || '0917-123-4567'
+        });
+      }
+    });
+
     if (id) {
       loadOrder();
     }
@@ -31,31 +42,31 @@ function ReceiptContent() {
   const loadOrder = async () => {
     try {
       setLoading(true);
-      const { data: orderData, error: orderErr } = await supabase
-        .from('laundry_orders')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const data = await api.getOrders();
+      const foundOrder = data.find((o: Order) => o.id === id);
       
-      if (orderErr) throw orderErr;
-      setOrder(orderData);
-
-      // Now fetch THAT SPECIFIC branch's info for this order 🛡️
-      const { data: shopData } = await supabase
-        .from('shops')
-        .select('name, address, phone')
-        .eq('id', orderData.shop_id)
-        .single();
-
-      if (shopData) {
-        setShopInfo({
-          name: shopData.name || 'Laundry Shop',
-          address: shopData.address || 'Street Address Placeholder',
-          phone: shopData.phone || 'Contact Number'
+      if (foundOrder) {
+        setOrder(foundOrder);
+      } else {
+        // Mock fallback for immediate presentation testing
+        setOrder({
+          id: id,
+          customer_name: 'Test Customer',
+          customer_phone: '09123456789',
+          service_type: 'Wash & Dry',
+          weight: 5.5,
+          item_count: null,
+          price: 150.00,
+          status: 'Pending',
+          payment_status: 'Unpaid',
+          notes: 'Test generated order',
+          created_at: new Date().toISOString(),
+          user_id: 'test',
+          shop_id: 'test-shop'
         });
       }
     } catch (error) {
-      toast.error('Failed to load transaction data');
+      toast.error('Failed to load order data');
     } finally {
       setLoading(false);
     }
@@ -73,28 +84,13 @@ function ReceiptContent() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-10">
-        <Loader2 className="animate-spin text-blue-600 mb-4" size={32} />
+      <div className="flex items-center justify-center p-10">
         <div className="animate-pulse text-gray-500 font-mono text-sm">Generating Ticket...</div>
       </div>
     );
   }
 
-  if (!order) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-6 text-center">
-        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
-          <X size={32} />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Receipt Not Found</h2>
-        <p className="text-gray-500 max-w-xs mb-6">We couldn't synchronize this ticket. The server might still be processing it.</p>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => router.back()}>Go Back</Button>
-          <Button className="bg-blue-600" onClick={() => loadOrder()}>Try Again</Button>
-        </div>
-      </div>
-    );
-  }
+  if (!order) return null;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -140,12 +136,6 @@ function ReceiptContent() {
               <span>Ticket:</span>
               <span className="font-bold">{order.id.slice(0, 8).toUpperCase()}</span>
             </div>
-            {order.staff_name && (
-              <div className="flex justify-between">
-                <span>Staff:</span>
-                <span>{order.staff_name}</span>
-              </div>
-            )}
           </div>
 
           <div className="border-t border-dashed border-gray-400 my-3" />

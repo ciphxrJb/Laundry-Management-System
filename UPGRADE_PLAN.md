@@ -1,0 +1,73 @@
+# Laundry System Upgrade Plan: Multi-Branch Support
+
+This plan addresses the gaps identified in the current multi-shop implementation to enable full branch isolation and support.
+
+## Current State Assessment
+- **✅ Database Schema:** Organizations, shops, memberships, and roles are defined with proper FKs.
+- **✅ Auth Framework:** Guards and role hierarchy exist in backend.
+- **❌ Data Isolation:** No shop-based filtering; users see cross-shop data.
+- **❌ Auth Context:** `api.getMe()` hardcoded; frontend lacks real shop/role info.
+- **⚠️ Partial Migration:** KV fallback still active; not fully on PostgreSQL.
+
+## Upgrade Phases
+
+### Phase 1: Auth Context & Data Isolation (✅ Complete - 4/21/2026)
+**Goal:** Fix authentication to resolve real shop/role context and enforce shop boundaries.
+
+#### Tasks:
+- [x] **Fix `api.getMe()`** → Query `memberships` table for user's active shop, organization, and role.
+- [x] **Add Shop Filtering to API Calls** → Pass `shopId` to all data fetches (orders, customers, dashboard).
+- [x] **Enforce Shop Filtering in Backend** → Update repositories to filter queries by `shopId`.
+- [x] **Tighten RLS Policies** → Restrict data access to user's shops only.
+- [x] **Test Isolation** → Verify users can't access other shops' data.
+
+#### Exit Criteria:
+- [x] `getMe()` returns dynamic shop/role from DB.
+- [x] All queries filtered by `shopId`.
+- [x] RLS prevents cross-shop data access.
+- [x] No data leakage in dashboard/order views.
+
+### Phase 2: Branch Features (In Progress - Medium Priority)
+**Goal:** Add UI and features for multi-branch management.
+
+#### Tasks:
+- [ ] **Shop Switcher UI** → Component for users to select active shop (if multi-shop access).
+- [ ] **Organization-Level Reporting** → Aggregate data across shops for owners.
+- [ ] **Branch-Specific Settings** → Per-shop pricing, services, and configs.
+- [ ] **Audit Logs** → Track changes with shop context.
+
+#### Exit Criteria:
+- [ ] Users can switch branches seamlessly.
+- [ ] Owners see organization-wide reports.
+- [ ] Settings isolated per branch.
+
+### Phase 3: Quality & Migration Completion (Lower Priority)
+**Goal:** Polish and complete the migration.
+
+#### Tasks:
+1. **Add Validation (Zod)** → Schemas for API contracts.
+2. **Implement Tests** → Unit/integration for tenant isolation.
+3. **Remove KV Fallback** → Fully migrate to PostgreSQL.
+4. **Performance Optimization** → Add caching (TanStack Query).
+
+#### Exit Criteria:
+- Full test coverage for multi-branch scenarios.
+- No KV usage in production.
+- Optimized data fetching.
+
+## Implementation Notes
+- Start with Phase 1 to prevent data leaks.
+- Update roadmap MDs after each phase.
+- Test thoroughly after changes—multi-tenant bugs are critical.
+- Coordinate with existing auth flow to avoid breaking login.
+
+## Risks
+- Auth changes could break login if not tested.
+- RLS tightening may lock out users—test with multiple accounts.
+- Migration downtime if KV removal is rushed.
+
+## Next Steps
+1. Implement Phase 1 fixes.
+2. Update this doc with progress.
+3. Proceed to Phase 2 once Phase 1 is stable.</content>
+<parameter name="filePath">c:\Users\joseb\Documents\Jb\Projects\Laundry Shop Management System\UPGRADE_PLAN.md

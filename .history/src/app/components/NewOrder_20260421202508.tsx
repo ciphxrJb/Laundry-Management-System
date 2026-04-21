@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, Order, Customer, CreateOrderInput, Service } from '../lib/api';
+import { api, Order, Customer } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { ThermalReceipt } from './ThermalReceipt';
 import { Input } from './ui/input';
@@ -21,18 +21,27 @@ import {
   ChevronRight,
   Loader2,
 } from 'lucide-react';
-import { useAuth } from '../auth/AuthProvider';
-import { supabase } from '../lib/supabase';
 
-// Dynamic service options will be loaded from DB
+type ServiceOption = {
+  value: string;
+  label: string;
+  description: string;
+  basePrice: number;
+  weightPrice: number;
+};
+
+const serviceTypes: ServiceOption[] = [
+  { value: 'Wash', label: 'Wash', description: 'Full machine wash cycle', basePrice: 50, weightPrice: 20 },
+  { value: 'Dry', label: 'Dry', description: 'Machine drying only', basePrice: 40, weightPrice: 15 },
+  { value: 'Fold', label: 'Fold', description: 'Folding & sorting service', basePrice: 30, weightPrice: 10 },
+  { value: 'Wash + Dry', label: 'Wash & Dry', description: 'Full wash and dry combo', basePrice: 80, weightPrice: 30 },
+  { value: 'Wash + Dry + Fold', label: 'Full Service', description: 'Wash, dry, and fold', basePrice: 100, weightPrice: 40 },
+];
 
 export function NewOrder() {
   const router = useRouter();
-  const { shopId } = useAuth();
-  const [shopName, setShopName] = useState('Laundry Shop');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [customersList, setCustomersList] = useState<Customer[]>([]);
-  const [serviceTypes, setServiceTypes] = useState<Service[]>([]);
   const initialFormState = {
     customerName: '',
     phone: '',
@@ -42,34 +51,19 @@ export function NewOrder() {
     price: '',
     paymentStatus: 'Unpaid' as 'Paid' | 'Unpaid',
     notes: '',
-    staffPin: '',
   };
 
   const [formData, setFormData] = useState(initialFormState);
   const [printedOrder, setPrintedOrder] = useState<Order | null>(null);
 
-  // Load returning customers and services
+  // Load returning customers for autocomplete memory
   useEffect(() => {
-    if (shopId) {
-      setLoading(true);
-      // Load shop name for branding
-      supabase.from('shops').select('name').eq('id', shopId).single()
-        .then(({data}) => { if(data?.name) setShopName(data.name); });
-
-      Promise.all([
-        api.getCustomers(shopId),
-        api.getServices(shopId)
-      ]).then(([customers, services]) => {
-        if (Array.isArray(customers)) setCustomersList(customers);
-        if (Array.isArray(services)) setServiceTypes(services);
-      }).catch(err => {
-        console.error("Could not load initial data", err);
-        toast.error("Failed to load shop settings");
-      }).finally(() => {
-        setLoading(false);
-      });
-    }
-  }, [shopId]);
+    api.getCustomers()
+      .then(data => {
+        if (Array.isArray(data)) setCustomersList(data);
+      })
+      .catch(err => console.error("Could not load customers for autofill", err));
+  }, []);
 
   // Autofill Handler for Name
   const handleNameChange = (val: string) => {
@@ -95,41 +89,39 @@ export function NewOrder() {
 
   useEffect(() => {
     if (formData.serviceType) {
-      const service = serviceTypes.find(s => s.name === formData.serviceType);
+      const service = serviceTypes.find(s => s.value === formData.serviceType);
       if (service) {
         const kg = parseFloat(formData.weight) || 0;
-        const computed = Number(service.base_price) + (kg * Number(service.price_per_kg));
+        const computed = service.basePrice + (kg * service.weightPrice);
         setFormData(prev => ({ ...prev, price: computed.toFixed(2) }));
       }
     }
-  }, [formData.serviceType, formData.weight, serviceTypes]);
+  }, [formData.serviceType, formData.weight]);
 
   const handleSubmit = async (e: React.FormEvent, shouldPrint = false) => {
     e.preventDefault();
-    if (!formData.customerName.trim() || !formData.serviceType || !formData.price || !formData.staffPin) {
-      toast.error('Please fill in all required fields including Staff PIN');
+    if (!formData.customerName.trim() || !formData.serviceType || !formData.price) {
+      toast.error('Please fill in all required fields');
       return;
     }
 
     try {
       setLoading(true);
-      const payload: CreateOrderInput = {
-        customer_name: formData.customerName.trim(),
-        customer_phone: formData.phone || null,
-        service_type: formData.serviceType,
+      const result = await api.createOrder({
+        customerName: formData.customerName.trim(),
+        phone: formData.phone || null,
+        serviceType: formData.serviceType,
         weight: formData.weight ? parseFloat(formData.weight) : null,
-        item_count: formData.itemCount ? parseInt(formData.itemCount) : null,
+        itemCount: formData.itemCount ? parseInt(formData.itemCount) : null,
         price: parseFloat(formData.price),
-        payment_status: formData.paymentStatus,
+        paymentStatus: formData.paymentStatus,
         notes: formData.notes.trim() || null,
-        staff_pin: formData.staffPin,
-      };
-      const result = await api.createOrder(payload, shopId);
+      });
 
       toast.success('Order created successfully!');
 
-      if (shouldPrint && result) {
-        setPrintedOrder(result);
+      if (shouldPrint && result.order) {
+        setPrintedOrder(result.order);
         setTimeout(() => {
           window.print();
           setFormData(initialFormState);
@@ -145,38 +137,16 @@ export function NewOrder() {
     }
   };
 
-  const handleSeedDefaults = async () => {
-    try {
-      setLoading(true);
-      await api.seedDefaultServices(shopId);
-      toast.success('Starter services added!');
-      // Reload services
-      const services = await api.getServices(shopId);
-      if (Array.isArray(services)) setServiceTypes(services);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to add starter services');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const selectedService = serviceTypes.find(s => s.name === formData.serviceType);
+  const selectedService = serviceTypes.find(s => s.value === formData.serviceType);
   
   return (
     <>
       <div className="space-y-6 pb-24 lg:pb-12 print:hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">{shopName}</h1>
-            <p className="text-slate-500 font-medium">Create a new laundry transaction</p>
+            <h1 className="text-3xl font-bold">New Order</h1>
+            <p className="text-gray-600 mt-1">Create a new laundry transaction</p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => router.push('/orders')} 
-            className="rounded-xl border-slate-200 h-12 px-6 font-bold text-slate-600 hover:bg-slate-50 transition-all"
-          >
-            View Registry
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -228,45 +198,21 @@ export function NewOrder() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 lg:gap-3">
-                  {loading && serviceTypes.length === 0 ? (
-                    // Skeleton Loaders
-                    [...Array(6)].map((_, i) => (
-                      <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse flex flex-col items-center justify-center gap-1">
-                        <div className="h-3 w-16 bg-slate-200 rounded" />
-                        <div className="h-2 w-10 bg-slate-200 rounded" />
-                      </div>
-                    ))
-                  ) : (
-                    serviceTypes.map((type) => (
-                      <Button
-                        key={type.id}
-                        variant={formData.serviceType === type.name ? 'default' : 'outline'}
-                        className={`h-auto py-3 lg:py-4 px-2 lg:px-4 flex flex-col items-center justify-center text-center gap-1 rounded-xl transition-all ${
-                          formData.serviceType === type.name 
-                          ? 'bg-blue-600 shadow-md shadow-blue-200 ring-2 ring-blue-600 ring-offset-2' 
-                          : 'border-slate-100 bg-slate-50 hover:bg-blue-50'
-                        }`}
-                        onClick={() => setFormData(prev => ({ ...prev, serviceType: type.name }))}
-                      >
-                        <span className="font-bold text-xs lg:text-sm">{type.name}</span>
-                        <span className="text-[9px] lg:text-[10px] opacity-70 italic font-mono">₱{type.base_price}+</span>
-                      </Button>
-                    ))
-                  )}
-
-                  {!loading && shopId && serviceTypes.length === 0 && (
-                    <div className="col-span-full py-12 text-center bg-blue-50/30 rounded-3xl border border-dashed border-blue-200 animate-in fade-in zoom-in duration-500">
-                      <p className="text-slate-600 font-bold text-sm">No services found for this branch.</p>
-                      <p className="text-slate-400 text-xs mt-1 mb-6">Would you like to start with our standard defaults?</p>
-                      <Button 
-                        onClick={handleSeedDefaults}
-                        variant="outline"
-                        className="rounded-xl border-blue-200 text-blue-600 font-bold hover:bg-blue-600 hover:text-white transition-all shadow-lg shadow-blue-100"
-                      >
-                        Add Starter Services (Wash, Dry, etc.)
-                      </Button>
-                    </div>
-                  )}
+                  {serviceTypes.map((type) => (
+                    <Button
+                      key={type.value}
+                      variant={formData.serviceType === type.value ? 'default' : 'outline'}
+                      className={`h-auto py-3 lg:py-4 px-2 lg:px-4 flex flex-col items-center justify-center text-center gap-1 rounded-xl transition-all ${
+                        formData.serviceType === type.value 
+                        ? 'bg-blue-600 shadow-md shadow-blue-200 ring-2 ring-blue-600 ring-offset-2' 
+                        : 'border-slate-100 bg-slate-50 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setFormData(prev => ({ ...prev, serviceType: type.value }))}
+                    >
+                      <span className="font-bold text-xs lg:text-sm">{type.label}</span>
+                      <span className="text-[9px] lg:text-[10px] opacity-70 italic font-mono">₱{type.basePrice}+</span>
+                    </Button>
+                  ))}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -309,24 +255,6 @@ export function NewOrder() {
                     className="min-h-[80px] bg-slate-50 border-slate-100 rounded-xl resize-none"
                   />
                 </div>
-
-                <div className="pt-4 border-t border-slate-100">
-                  <Label htmlFor="staffPin" className="text-blue-600 font-bold flex items-center gap-2 mb-2">
-                    Staff Authorization (PIN)
-                  </Label>
-                  <Input
-                    id="staffPin"
-                    type="password"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    pattern="[0-9]*"
-                    maxLength={4}
-                    value={formData.staffPin}
-                    onChange={(e) => setFormData(prev => ({ ...prev, staffPin: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="Enter your 4-digit PIN"
-                    className="h-12 bg-blue-50/50 border-blue-100 rounded-xl text-center text-xl tracking-[0.5em] font-black placeholder:tracking-normal placeholder:text-sm placeholder:font-medium"
-                  />
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -342,11 +270,11 @@ export function NewOrder() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 font-medium">Service Fee</span>
-                    <span className="font-bold">₱{selectedService?.base_price || 0}</span>
+                    <span className="font-bold">₱{selectedService?.basePrice || 0}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 font-medium">Weight Fee</span>
-                    <span className="font-bold">₱{((parseFloat(formData.weight) || 0) * (Number(selectedService?.price_per_kg) || 0)).toFixed(2)}</span>
+                    <span className="font-bold">₱{((parseFloat(formData.weight) || 0) * (selectedService?.weightPrice || 0)).toFixed(2)}</span>
                   </div>
                   <div className="h-px bg-slate-100" />
                   <div className="flex justify-between items-center pt-2">

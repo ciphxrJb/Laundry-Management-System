@@ -18,9 +18,7 @@ import {
   Settings as SettingsIcon
 } from 'lucide-react';
 import { ShopSwitcher } from './ShopSwitcher';
-import { useAuth } from '../auth/AuthProvider';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from './ui/sheet';
-import { Button } from './ui/button';
 import { api } from '../lib/api';
 
 interface LayoutProps {
@@ -30,19 +28,9 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, shopId, switchShop } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [appMode, setAppMode] = useState<'system' | 'admin'>('system');
   const [userEmail, setUserEmail] = useState<string>('Syncing...');
-
-  const handleShopChange = async (newShopId: string) => {
-    try {
-      await switchShop(newShopId);
-      // Removed window.location.reload() for a smoother experience
-    } catch (error) {
-      console.error('Failed to switch shop:', error);
-    }
-  };
 
   useEffect(() => {
     const savedMode = localStorage.getItem('appMode') as 'system' | 'admin';
@@ -50,12 +38,16 @@ export function Layout({ children }: LayoutProps) {
       setAppMode(savedMode);
     }
 
-    if (user?.email) {
-      setUserEmail(user.email);
-    } else if (!user && pathname !== '/login' && pathname !== '/') {
-      router.push('/login');
-    }
-  }, [user, pathname, router]);
+    const fetchUser = async () => {
+      const data = await api.getMe();
+      if (data?.user) {
+        setUserEmail(data.user.email || '');
+      } else {
+        router.push('/login');
+      }
+    };
+    fetchUser();
+  }, [pathname]);
 
   const handleSwitchMode = () => {
     localStorage.removeItem('appMode');
@@ -147,7 +139,7 @@ export function Layout({ children }: LayoutProps) {
                   }}
                 >
                   <RefreshCw size={18} className="text-slate-500" />
-                  Exit to Selection
+                  Switch Mode
                 </Button>
                 <Button
                   variant="ghost"
@@ -177,7 +169,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
 
         {/* Elegant Account Widget */}
-        <div className="mb-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-3 relative overflow-hidden group hover:border-blue-200 transition-colors">
+        <div className="mb-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3 relative overflow-hidden group hover:border-blue-200 transition-colors">
           <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:border-blue-100 transition-all">
             <User size={20} />
           </div>
@@ -185,12 +177,6 @@ export function Layout({ children }: LayoutProps) {
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Authenticated</p>
             <p className="text-xs font-bold text-slate-700 truncate">{userEmail}</p>
           </div>
-          {appMode === 'admin' && (
-            <ShopSwitcher
-              currentShopId={shopId}
-              onShopChange={handleShopChange}
-            />
-          )}
         </div>
 
         <Button
@@ -198,8 +184,8 @@ export function Layout({ children }: LayoutProps) {
           className="w-full h-10 mb-8 rounded-xl justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-bold transition-all border-dashed"
           onClick={handleSwitchMode}
         >
-          <RefreshCw size={16} className="mr-2" />
-          Exit to Selection
+          <LogOut size={16} className="mr-2" />
+          Switch Mode
         </Button>
 
         <nav className="flex flex-col gap-2 flex-1">

@@ -30,13 +30,7 @@ function resolveRole(user: any | null): AppRole {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [role, setRole] = useState<AppRole>('staff');
-  const [shopId, setShopId] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('shopId');
-      return (saved && saved !== 'null' && saved !== 'undefined') ? saved : null;
-    }
-    return null;
-  });
+  const [shopId, setShopId] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,11 +59,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const context = await withTimeout(api.getMe(), 8000);
         setUser(sessionUser);
         setRole((context?.role as AppRole) || resolveRole(sessionUser));
-        setShopId(prev => context?.shopId || prev);
+        setShopId(context?.shopId || null);
         setOrganizationId(null);
       } catch {
         setUser(sessionUser);
         setRole(resolveRole(sessionUser));
+        setShopId(null);
         setOrganizationId(null);
       }
     };
@@ -137,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Verify the user has access to this shop
       const userShops = await api.getUserShops();
-      const hasAccess = userShops.some(item => item.id === newShopId);
+      const hasAccess = userShops.some(item => item.shops.id === newShopId);
       if (!hasAccess) {
         throw new Error('Access denied to this shop');
       }
@@ -145,8 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update the shop ID in state
       setShopId(newShopId);
 
-      // Persist the shop choice
-      localStorage.setItem('shopId', newShopId);
+      // You might want to update localStorage or a cookie here for persistence
+      // For now, we'll just update the state
     } catch (error) {
       console.error('Failed to switch shop:', error);
       throw error;
@@ -176,8 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }),
     [user, role, shopId, organizationId, loading],
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

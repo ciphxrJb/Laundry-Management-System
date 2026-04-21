@@ -241,19 +241,18 @@ export class LaundryRepository {
     }
   }
 
-  async getCustomers(shopId: string) {
+  async getCustomers() {
     try {
       const { data, error } = await this.supabase
         .from("laundry_customers")
         .select("*")
-        .eq("shop_id", shopId)
         .order("last_visit", { ascending: false });
       if (error) throw error;
       return (data || []).map(mapCustomerRow);
     } catch (error) {
       if (!isMissingTableError(error)) throw error;
       const customers = await kv.getByPrefix("customers:");
-      return customers.filter(c => c.shopId === shopId).sort((a, b) => new Date(b.lastVisit).getTime() - new Date(a.lastVisit).getTime());
+      return customers.sort((a, b) => new Date(b.lastVisit).getTime() - new Date(a.lastVisit).getTime());
     }
   }
 }

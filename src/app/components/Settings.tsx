@@ -7,9 +7,15 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/app/lib/supabase';
-import { Store, Phone, MapPin, Save, Loader2, Lock } from 'lucide-react';
+import { Store, Phone, MapPin, Save, Loader2, Lock, Droplets, Users, Landmark } from 'lucide-react';
+import { ServiceManager } from './ServiceManager';
+import { StaffManager } from './StaffManager';
+import { BranchManager } from './BranchManager';
+import { useAuth } from '../auth/AuthProvider';
 
 export function Settings() {
+  const { shopId } = useAuth();
+  const [activeTab, setActiveTab] = useState<'profile' | 'services' | 'staff' | 'organization'>('profile');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   
@@ -20,17 +26,26 @@ export function Settings() {
 
   useEffect(() => {
     async function loadProfile() {
+      if (!shopId) {
+        setFetching(false);
+        return;
+      }
+
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        setFetching(true);
+        // Fetch specific shop metadata from the API/Database instead of just user_metadata
+        const { data: shop, error: shopErr } = await supabase
+          .from('shops')
+          .select('*')
+          .eq('id', shopId)
+          .single();
+
+        if (shopErr) throw shopErr;
         
-        if (session?.user?.user_metadata) {
-          const meta = session.user.user_metadata;
-          setShopName(meta.shop_name || 'Laundry POS');
-          setShopAddress(meta.shop_address || '123 Main Street\nCityville');
-          setShopPhone(meta.shop_phone || '0917-123-4567');
-          setAdminPin(meta.admin_pin || '1234');
-        }
+        setShopName(shop.name || '');
+        setShopAddress(shop.address || ''); 
+        setShopPhone(shop.phone || '');
+        setAdminPin(shop.admin_pin || '1234');
       } catch (err) {
         console.error('Failed to load settings:', err);
       } finally {
@@ -38,22 +53,29 @@ export function Settings() {
       }
     }
     loadProfile();
-  }, []);
+  }, [shopId]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.updateUser({
-        data: {
-          shop_name: shopName,
-          shop_address: shopAddress,
-          shop_phone: shopPhone,
+      const { error } = await supabase
+        .from('shops')
+        .update({
+          name: shopName,
+          address: shopAddress,
+          phone: shopPhone,
           admin_pin: adminPin
-        }
-      });
+        })
+        .eq('id', shopId);
+
       if (error) throw error;
-      toast.success('Shop settings updated successfully!');
+      toast.success('Branch settings updated successfully!');
+      
+      // Give the DB a moment, then refresh to sync with Sidebar/Switcher
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (err: any) {
       toast.error(err.message || 'Failed to update shop metadata');
     } finally {
@@ -61,116 +83,164 @@ export function Settings() {
     }
   };
 
-  if (fetching) {
+  const tabs = [
+    { id: 'profile', label: 'Branch Profile', icon: Store },
+    { id: 'services', label: 'Laundry Services', icon: Droplets },
+    { id: 'staff', label: 'Staff & Security', icon: Users },
+    { id: 'organization', label: 'Organization', icon: Landmark },
+  ];
+
+  if (fetching && !shopName) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="space-y-10 max-w-5xl mx-auto pb-12 animate-pulse">
+        <div className="flex flex-col items-center gap-4 mb-10">
+          <div className="h-12 w-64 bg-slate-200 rounded-2xl" />
+          <div className="h-4 w-48 bg-slate-100 rounded-xl" />
+        </div>
+        <div className="flex justify-center gap-2 mb-12">
+          {[1,2,3,4].map(i => <div key={i} className="h-12 w-32 bg-slate-100 rounded-full" />)}
+        </div>
+        <div className="h-[600px] w-full bg-white rounded-[3rem] shadow-sm border border-slate-100" />
       </div>
     );
   }
 
+  
   return (
-    <div className="space-y-6 max-w-2xl mx-auto pb-12 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Shop Settings</h1>
-          <p className="text-gray-600 mt-1">Manage your business profile and receipt details</p>
+    <div className="space-y-6 max-w-5xl mx-auto pb-12 animate-in fade-in duration-500">
+      {/* Modern Segmented Control (Centered) */}
+      <div className="flex justify-center">
+        <div className="bg-slate-100/60 backdrop-blur-md p-1 rounded-full flex gap-1 border border-slate-200/50">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-2 px-6 py-2 rounded-full transition-all duration-300 text-xs font-bold ${
+                activeTab === tab.id
+                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200 scale-105'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <tab.icon size={14} className={activeTab === tab.id ? 'text-blue-600' : 'text-slate-400'} />
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <Card className="border-none shadow-xl bg-white rounded-2xl overflow-hidden">
-        <CardHeader className="bg-slate-50/50 border-b">
-          <CardTitle className="text-xl flex items-center gap-2">
-            <Store className="text-blue-600" size={20} />
-            Receipt Information
-          </CardTitle>
-          <CardDescription>
-            This information will be printed on all physical and digital customer receipts.
-          </CardDescription>
-        </CardHeader>
+      {/* Content Area */}
+      <div className="mt-2 relative">
         
-        <form onSubmit={handleSave}>
-          <CardContent className="space-y-5 pt-6">
-            <div className="space-y-2">
-              <Label htmlFor="shopName" className="font-bold">Business Name</Label>
-              <div className="relative">
-                <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <Input
-                  id="shopName"
-                  value={shopName}
-                  onChange={(e) => setShopName(e.target.value)}
-                  placeholder="e.g. Wash & Fold Master"
-                  className="pl-10 h-12 bg-slate-50 border-slate-200"
-                  required
-                />
+        {/* Branch Profile */}
+        <div className={activeTab === 'profile' ? 'block animate-in fade-in zoom-in-95 duration-500' : 'hidden'}>
+          <Card className="border-none shadow-xl bg-white rounded-[2rem] overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b p-6 flex flex-row items-center gap-4 text-left">
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
+                <Store size={24} />
               </div>
-            </div>
+              <div>
+                <CardTitle className="text-xl font-black text-slate-900 tracking-tight">Branch Profile</CardTitle>
+                <p className="text-[11px] text-slate-500 font-medium">Manage business information and security</p>
+              </div>
+            </CardHeader>
+            
+            <form onSubmit={handleSave}>
+              <CardContent className="p-8 space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Column 1 */}
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="shopName" className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Business Name</Label>
+                      <Input
+                        id="shopName"
+                        value={shopName}
+                        onChange={(e) => setShopName(e.target.value)}
+                        placeholder="e.g. Wash & Fold Master"
+                        className="h-12 bg-slate-50/50 border-slate-100 rounded-xl font-bold focus:bg-white transition-all px-4"
+                        required
+                      />
+                    </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="shopPhone" className="font-bold">Contact Number</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <Input
-                  id="shopPhone"
-                  value={shopPhone}
-                  onChange={(e) => setShopPhone(e.target.value)}
-                  placeholder="e.g. 0917-123-4567"
-                  className="pl-10 h-12 bg-slate-50 border-slate-200"
-                  required
-                />
-              </div>
-            </div>
+                    <div className="space-y-2">
+                       <Label htmlFor="shopPhone" className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Contact Phone</Label>
+                       <Input
+                         id="shopPhone"
+                         value={shopPhone}
+                         onChange={(e) => setShopPhone(e.target.value)}
+                         placeholder="e.g. 0917-123-4567"
+                         className="h-12 bg-slate-50/50 border-slate-100 rounded-xl font-bold focus:bg-white transition-all px-4"
+                         required
+                       />
+                    </div>
+                  </div>
 
-            <div className="space-y-2 pt-4 border-t border-slate-100">
-              <Label htmlFor="adminPin" className="font-bold">Admin Security PIN</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <Input
-                  id="adminPin"
-                  type="password"
-                  maxLength={4}
-                  value={adminPin}
-                  onChange={(e) => setAdminPin(e.target.value.replace(/\D/g, ''))}
-                  placeholder="e.g. 1234"
-                  className="pl-10 h-12 bg-slate-50 border-slate-200"
-                  required
-                />
-              </div>
-              <p className="text-[11px] text-gray-500 italic">This 4-digit code is required to access the Manager Dashboard.</p>
-            </div>
+                  {/* Column 2 */}
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="shopAddress" className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Physical Address</Label>
+                      <textarea
+                        id="shopAddress"
+                        value={shopAddress}
+                        onChange={(e) => setShopAddress(e.target.value)}
+                        placeholder="e.g. 143 Laundry Street, Manila"
+                        className="w-full h-12 min-h-12 max-h-32 p-3 rounded-xl border border-slate-100 bg-slate-50/50 text-sm font-bold focus:bg-white transition-all outline-none leading-relaxed"
+                        required
+                      />
+                    </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="shopAddress" className="font-bold">Business Address</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 text-gray-400" size={16} />
-                <textarea
-                  id="shopAddress"
-                  value={shopAddress}
-                  onChange={(e) => setShopAddress(e.target.value)}
-                  placeholder="e.g. 143 Laundry Street, Manila"
-                  className="w-full min-h-[100px] pl-10 pt-3 p-3 rounded-md border border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none"
-                  required
-                />
-              </div>
-              <p className="text-[11px] text-gray-500 italic">Keep it short so it fits nicely on a thermal receipt printer.</p>
-            </div>
-          </CardContent>
-          
-          <CardFooter className="bg-slate-50/50 border-t pt-6 flex justify-end">
-            <Button 
-              type="submit" 
-              className="h-12 px-8 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 shadow-md transition-all active:scale-95"
-              disabled={loading}
-            >
-              {loading ? (
-                <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Saving Changes...</>
-              ) : (
-                <><Save className="w-5 h-5 mr-2" /> Save Settings</>
-              )}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+                    <div className="p-4 bg-red-50/30 rounded-2xl border border-red-100/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                         <Label htmlFor="adminPin" className="text-[10px] font-black uppercase tracking-widest text-red-400 px-1">Security PIN</Label>
+                         <Lock size={12} className="text-red-300" />
+                      </div>
+                      <Input
+                        id="adminPin"
+                        type="password"
+                        maxLength={4}
+                        value={adminPin}
+                        onChange={(e) => setAdminPin(e.target.value.replace(/\D/g, ''))}
+                        placeholder="••••"
+                        className="h-10 bg-white border-red-100 rounded-xl font-mono tracking-[0.6em] text-center text-lg shadow-sm"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              
+              <CardFooter className="bg-slate-50/50 border-t p-6 flex justify-end">
+                <Button 
+                  type="submit" 
+                  className="h-12 px-8 rounded-xl font-black uppercase tracking-widest text-[10px] bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all active:scale-95 flex gap-2"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                  ) : (
+                    <><Save className="w-4 h-4" /> Update Profile</>
+                  )}
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
+
+        {/* Laundry Services */}
+        <div className={activeTab === 'services' ? 'block animate-in fade-in zoom-in-95 duration-500' : 'hidden'}>
+          <ServiceManager />
+        </div>
+
+        {/* Staff & Security */}
+        <div className={activeTab === 'staff' ? 'block animate-in fade-in zoom-in-95 duration-500' : 'hidden'}>
+          <StaffManager />
+        </div>
+
+        {/* Organization */}
+        <div className={activeTab === 'organization' ? 'block animate-in fade-in zoom-in-95 duration-500' : 'hidden'}>
+          <BranchManager />
+        </div>
+
+      </div>
     </div>
   );
 }

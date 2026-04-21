@@ -20,7 +20,6 @@ import {
 import { ShopSwitcher } from './ShopSwitcher';
 import { useAuth } from '../auth/AuthProvider';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from './ui/sheet';
-import { Button } from './ui/button';
 import { api } from '../lib/api';
 
 interface LayoutProps {
@@ -38,9 +37,11 @@ export function Layout({ children }: LayoutProps) {
   const handleShopChange = async (newShopId: string) => {
     try {
       await switchShop(newShopId);
-      // Removed window.location.reload() for a smoother experience
+      // Optionally refresh the page or update components that depend on shopId
+      window.location.reload();
     } catch (error) {
       console.error('Failed to switch shop:', error);
+      // You might want to show a toast notification here
     }
   };
 
@@ -50,12 +51,16 @@ export function Layout({ children }: LayoutProps) {
       setAppMode(savedMode);
     }
 
-    if (user?.email) {
-      setUserEmail(user.email);
-    } else if (!user && pathname !== '/login' && pathname !== '/') {
-      router.push('/login');
-    }
-  }, [user, pathname, router]);
+    const fetchUser = async () => {
+      const data = await api.getMe();
+      if (data?.user) {
+        setUserEmail(data.user.email || '');
+      } else {
+        router.push('/login');
+      }
+    };
+    fetchUser();
+  }, [pathname]);
 
   const handleSwitchMode = () => {
     localStorage.removeItem('appMode');
@@ -147,7 +152,7 @@ export function Layout({ children }: LayoutProps) {
                   }}
                 >
                   <RefreshCw size={18} className="text-slate-500" />
-                  Exit to Selection
+                  Switch Mode
                 </Button>
                 <Button
                   variant="ghost"
@@ -185,12 +190,10 @@ export function Layout({ children }: LayoutProps) {
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Authenticated</p>
             <p className="text-xs font-bold text-slate-700 truncate">{userEmail}</p>
           </div>
-          {appMode === 'admin' && (
-            <ShopSwitcher
-              currentShopId={shopId}
-              onShopChange={handleShopChange}
-            />
-          )}
+          <ShopSwitcher
+            currentShopId={shopId}
+            onShopChange={handleShopChange}
+          />
         </div>
 
         <Button
@@ -198,8 +201,8 @@ export function Layout({ children }: LayoutProps) {
           className="w-full h-10 mb-8 rounded-xl justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-bold transition-all border-dashed"
           onClick={handleSwitchMode}
         >
-          <RefreshCw size={16} className="mr-2" />
-          Exit to Selection
+          <LogOut size={16} className="mr-2" />
+          Switch Mode
         </Button>
 
         <nav className="flex flex-col gap-2 flex-1">

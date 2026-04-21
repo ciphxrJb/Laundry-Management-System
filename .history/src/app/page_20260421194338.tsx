@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { supabase } from './lib/supabase';
 import { Settings, Monitor, Droplets, Lock, X, Loader2, ChevronRight, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,7 +17,6 @@ import { api } from './lib/api';
 
 export default function ModeSelection() {
   const router = useRouter();
-  const pathname = usePathname();
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,25 +28,27 @@ export default function ModeSelection() {
     const fetchUser = async () => {
       try {
         const data = await api.getMe();
-        if (data?.user) {
+        if (data?.user && data.shopId) {
           setUserEmail(data.user.email || '');
           setCorrectPin(data.user.user_metadata?.admin_pin || '1234');
-        } else if (pathname !== '/login' && pathname !== '/') {
+          setCheckingAuth(false);
+        } else {
           router.push('/login');
         }
       } catch (err) {
-        if (pathname !== '/login' && pathname !== '/') {
-          router.push('/login');
-        }
-      } finally {
-        setCheckingAuth(false);
+        router.push('/login');
       }
     };
     fetchUser();
   }, [router]);
 
-  // Removed the full-screen checkingAuth return to make it instant!
-  
+  if (checkingAuth) {
+    return (
+      <div className="h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   const selectMode = (mode: 'system' | 'admin') => {
     if (mode === 'system') {
