@@ -52,7 +52,7 @@ export function Layout({ children }: LayoutProps) {
 
     if (user?.email) {
       setUserEmail(user.email);
-    } else if (!user && pathname !== '/login' && pathname !== '/') {
+    } else if (!user && pathname !== '/login') {
       router.push('/login');
     }
   }, [user, pathname, router]);
